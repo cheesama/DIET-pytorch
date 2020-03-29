@@ -1,2 +1,2 @@
 # DIET-pytorch
-Dual Intent Entity Classifier Pytorch version
+Dual Intent Entity Transformer Pytorch version

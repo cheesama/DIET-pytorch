@@ -1,5 +1,6 @@
 dill
 pycm
 pytorch
+pytorch-nlp
 pytorch-lightning
 sentencepiece

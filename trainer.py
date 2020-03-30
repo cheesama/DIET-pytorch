@@ -6,6 +6,7 @@ import os, sys
 import torch
 import pytorch_lightning as pl
 
+
 class DualIntentEntityTransformer(pl.LightningModule):
     def __init__(self):
         pass

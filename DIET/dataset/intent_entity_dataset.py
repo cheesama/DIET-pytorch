@@ -29,6 +29,9 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         with open(file_path, "r", encoding="utf-8") as nluFile:
             for line in tqdm(nluFile.readlines(), desc='Extracting Intent & Entity in NLU markdown files...'):
+                if len(line.strip()) < 2:
+                    continue
+
                 if "## " in line:
                     if "intent:" in line:
                         current_intent_focus = line.split(":")[1].strip()
@@ -68,7 +71,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                         text = text.replace("[", "").replace("]", "")
 
                         each_data_dict = {}
-                        each_data_dict["text"] = text
+                        each_data_dict["text"] = text.strip()
                         each_data_dict["intent"] = current_intent_focus
                         each_data_dict["intent_idx"] = self.intent_dict[
                             current_intent_focus

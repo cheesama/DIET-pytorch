@@ -6,6 +6,7 @@ import torch
 import numpy as np
 import re
 
+
 class RasaIntentEntityDataset(torch.utils.data.Dataset):
     """
     RASA NLU markdown file based Custom Dataset Class
@@ -17,10 +18,13 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
     - 인터넷 데이터 [달마다](Every_Month)마다 보내줄 수 있어?    <- utterance with entity
     
     """
+
     def __init__(self, file_path, seq_len=128):
         self.intent_dict = {}
-        self.entity_dict = {}       
-        self.entity_dict['O'] = 0  # based on XO tagging(one entity_type has assigned to one class)
+        self.entity_dict = {}
+        self.entity_dict[
+            "O"
+        ] = 0  # based on XO tagging(one entity_type has assigned to one class)
 
         self.dataset = []
         self.seq_len = seq_len
@@ -28,7 +32,10 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         current_intent_focus = ""
 
         with open(file_path, "r", encoding="utf-8") as nluFile:
-            for line in tqdm(nluFile.readlines(), desc='Extracting Intent & Entity in NLU markdown files...'):
+            for line in tqdm(
+                nluFile.readlines(),
+                desc="Extracting Intent & Entity in NLU markdown files...",
+            ):
                 if len(line.strip()) < 2:
                     continue
 
@@ -91,37 +98,43 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
                         self.dataset.append(each_data_dict)
 
-        #encoder(tokenizer) definition
-        self.encoder = CharacterEncoder([data['text'] for data in self.dataset]) 
+        # encoder(tokenizer) definition
+        self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        #bos_token=3, eos_token=2, unk_token=1, pad_token=0
-        tokens = self.encoder.encode(self.dataset[idx]['text'])
+        # bos_token=3, eos_token=2, unk_token=1, pad_token=0
+        tokens = self.encoder.encode(self.dataset[idx]["text"])
         bos_tensor = torch.tensor([3])
         eos_tensor = torch.tensor([2])
         tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
 
         if len(tokens) > self.seq_len:
-            tokens = tokens[:self.seq_len]
+            tokens = tokens[: self.seq_len]
         else:
             pad_tensor = torch.tensor([0] * (self.seq_len - len(tokens)))
             tokens = torch.cat((tokens, pad_tensor), 0)
 
-        intent_idx = torch.tensor([self.dataset[idx]['intent_idx']])
+        intent_idx = torch.tensor([self.dataset[idx]["intent_idx"]])
 
         entity_idx = np.zeros(self.seq_len)
-        for entity_info in self.dataset[idx]['entities']:
-            for i in range(entity_info['start'], entity_info['end'] + 1):
-                entity_idx[i] = entity_info['entity_idx']
+        for entity_info in self.dataset[idx]["entities"]:
+            for i in range(entity_info["start"], entity_info["end"] + 1):
+                entity_idx[i] = entity_info["entity_idx"]
         entity_idx = torch.from_numpy(entity_idx)
 
         return tokens, intent_idx, entity_idx
 
     def get_intent_idx(self):
         return self.intent_dict
-        
+
     def get_entity_idx(self):
         return self.entity_dict
+
+    def get_vocab_size(self):
+        return len(self.encoder.vocab)
+
+    def get_seq_len(self):
+        return self.seq_len

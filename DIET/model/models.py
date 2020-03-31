@@ -20,6 +20,7 @@ class EmbeddingTransformer(nn.Module):
         activation="relu",
     ):
         super(EmbeddingTransformer, self).__init__()
+
         self.seq_len = seq_len
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.position_embedding = nn.Embedding(seq_len, d_model)
@@ -43,6 +44,6 @@ class EmbeddingTransformer(nn.Module):
         # first token in sequence used to intent classification
         intent_feature = self.intent_feature(feature[0, :, :])
         # other tokens in sequence used to entity classification
-        entity_feature = self.intent_feature(feature[1:, :, :])
+        entity_feature = self.entity_feature(feature[:, :, :])
 
         return intent_feature, entity_feature.transpose(1, 0)  # (S,N,E) -> (N,S,E)

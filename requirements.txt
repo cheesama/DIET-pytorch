@@ -1,5 +1,6 @@
 dill
 mdutils
+numpy
 pycm
 pytorch
 pytorch-nlp

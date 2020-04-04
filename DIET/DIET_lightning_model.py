@@ -57,10 +57,10 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
     def configure_optimizers(self):
         intent_optimizer = eval(
-            f"{self.optimizer}(self.model.parameters(), lr={self.lr})"
+            f"{self.optimizer}(self.parameters(), lr={self.lr})"
         )
         entity_optimizer = eval(
-            f"{self.optimizer}(self.model.parameters(), lr={self.lr})"
+            f"{self.optimizer}(self.parameters(), lr={self.lr})"
         )
         return (
             [intent_optimizer, entity_optimizer],

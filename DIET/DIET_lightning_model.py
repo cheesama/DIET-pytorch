@@ -1,7 +1,10 @@
+from argparse import Namespace
+
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
+
 from pytorch_lightning import Trainer
 
 from .dataset.intent_entity_dataset import RasaIntentEntityDataset
@@ -29,7 +32,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
         )
 
         self.train_ratio = train_ratio
-        self.batch_size = 32
+        self.batch_size = batch_size
         self.optimizer = optimizer
         self.lr = lr
         self.loss_fn = nn.CrossEntropyLoss()
@@ -74,10 +77,10 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         if optimizer_idx == 0:
             intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
-            return {"loss":intent_loss, "intent_loss": intent_loss}
+            return {"loss": intent_loss, "intent_loss": intent_loss}
         if optimizer_idx == 1:
             entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long())
-            return {"loss":entity_loss, "entity_loss": entity_loss}
+            return {"loss": entity_loss, "entity_loss": entity_loss}
 
     def validation_step(self, batch, batch_idx):
         tokens, intent_idx, entity_idx = batch
@@ -89,7 +92,17 @@ class DualIntentEntityTransformer(pl.LightningModule):
             entity_pred.transpose(1, 2), entity_idx.long()
         )  # , ignore_index=0)
 
-        return {"val_intent_loss": intent_loss, "val_entity_loss": entity_loss}
+        return {
+            "val_intent_loss": intent_loss,
+            "val_entity_loss": entity_loss,
+            "val_loss": intent_loss + entity_loss,
+        }
+
+    def validation_epoch_end(self, outputs):
+        #OPTIONAL
+        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        tensorboard_logs = {'val_loss': avg_loss}
+        return {'avg_val_loss': avg_loss, 'log': tensorboard_logs}
 
     def valdition_epoch_end(self, outputs):
         avg_intent_loss = torch.stack([x["val_intent_loss"] for x in outputs]).mean()

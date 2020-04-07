@@ -17,12 +17,10 @@ import pytorch_lightning as pl
 
 
 class DualIntentEntityTransformer(pl.LightningModule):
-    def __init__(
-        self, data_file_path, train_ratio=0.8, batch_size=32, optimizer="Adam", lr=1e-3
-    ):
+    def __init__(self, hparams):
         super().__init__()
 
-        self.dataset = RasaIntentEntityDataset(data_file_path)
+        self.dataset = RasaIntentEntityDataset(hparams.data_file_path)
 
         self.model = EmbeddingTransformer(
             vocab_size=self.dataset.get_vocab_size(),
@@ -31,10 +29,11 @@ class DualIntentEntityTransformer(pl.LightningModule):
             entity_class_num=len(self.dataset.get_entity_idx()),
         )
 
-        self.train_ratio = train_ratio
-        self.batch_size = batch_size
-        self.optimizer = optimizer
-        self.lr = lr
+        self.train_ratio = hparams.train_ratio
+        self.batch_size = hparams.batch_size
+        self.optimizer = hparams.optimizer
+        self.lr = hparams.lr
+
         self.loss_fn = nn.CrossEntropyLoss()
 
     def forward(self, x):
@@ -56,12 +55,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
         return val_loader
 
     def configure_optimizers(self):
-        intent_optimizer = eval(
-            f"{self.optimizer}(self.parameters(), lr={self.lr})"
-        )
-        entity_optimizer = eval(
-            f"{self.optimizer}(self.parameters(), lr={self.lr})"
-        )
+        intent_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.lr})")
+        entity_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.lr})")
         return (
             [intent_optimizer, entity_optimizer],
             [
@@ -99,10 +94,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
         }
 
     def validation_epoch_end(self, outputs):
-        #OPTIONAL
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss}
-        return {'avg_val_loss': avg_loss, 'log': tensorboard_logs}
+        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
+        tensorboard_logs = {"val_loss": avg_loss}
+        return {"avg_val_loss": avg_loss, "log": tensorboard_logs}
 
     def valdition_epoch_end(self, outputs):
         avg_intent_loss = torch.stack([x["val_intent_loss"] for x in outputs]).mean()

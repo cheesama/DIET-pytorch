@@ -20,7 +20,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
 
-        self.dataset = RasaIntentEntityDataset(hparams.data_file_path)
+        self.hparams = hparams
+
+        self.dataset = RasaIntentEntityDataset(self.hparams.data_file_path)
 
         self.model = EmbeddingTransformer(
             vocab_size=self.dataset.get_vocab_size(),
@@ -29,10 +31,10 @@ class DualIntentEntityTransformer(pl.LightningModule):
             entity_class_num=len(self.dataset.get_entity_idx()),
         )
 
-        self.train_ratio = hparams.train_ratio
-        self.batch_size = hparams.batch_size
-        self.optimizer = hparams.optimizer
-        self.lr = hparams.lr
+        self.train_ratio = self.hparams.train_ratio
+        self.batch_size = self.hparams.batch_size
+        self.optimizer = self.hparams.optimizer
+        self.lr = self.hparams.lr
 
         self.loss_fn = nn.CrossEntropyLoss()
 

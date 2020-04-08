@@ -2,7 +2,6 @@ from pytorch_lightning import Trainer
 from argparse import Namespace
 
 from .DIET_lightning_model import DualIntentEntityTransformer
-from .mnist_model import MNISTModel
 
 import os, sys
 

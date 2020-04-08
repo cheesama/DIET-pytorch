@@ -2,7 +2,7 @@ dill
 mdutils
 numpy
 pycm
-pytorch
-pytorch-nlp
 pytorch-lightning
+pytorch-nlp
 sentencepiece
+torch==1.4

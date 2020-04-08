@@ -1,1 +1,1 @@
-  
+from .DIET_lightning_model import DualIntentEntityTransformer

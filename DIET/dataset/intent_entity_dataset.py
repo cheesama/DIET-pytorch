@@ -101,7 +101,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         # encoder(tokenizer) definition
         self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
 
-    def tokenize(self, text:str, seq_len:int=self.seq_len, padding:bool=True, return_tensor:bool=True):
+    def tokenize(self, text:str, padding:bool=True, return_tensor:bool=True):
         # bos_token=3, eos_token=2, unk_token=1, pad_token=0
         tokens = self.encoder.encode(text)
         bos_tensor = torch.tensor([3])

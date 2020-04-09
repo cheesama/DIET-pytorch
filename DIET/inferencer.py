@@ -4,22 +4,24 @@ import torch
 
 model = None
 
-def load_model(checkpoint_path:str):
+
+def load_model(checkpoint_path: str):
     model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
 
     return model
 
-def inference(text:str):
+
+def inference(text: str):
     if model is None:
-        raise ValueError('model is not loaded, first call load_model(checkpoint_path)')
+        raise ValueError("model is not loaded, first call load_model(checkpoint_path)")
 
     tokens = model.dataset.tokenize(text)
     intent_result, entity_result = model.forward(tokens)
 
-    #model.dataset.intent_dict
-    #model.dataset.entity_dict
+    # model.dataset.intent_dict
+    # model.dataset.entity_dict
 
-    #rasa NLU result format
+    # rasa NLU result format
     """
     {
         "entities": [
@@ -44,5 +46,3 @@ def inference(text:str):
         "text": "Hello!"
     }
     """
-
-

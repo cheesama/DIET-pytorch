@@ -18,10 +18,13 @@ class EmbeddingTransformer(nn.Module):
         dim_feedforward=2048,
         dropout=0.1,
         activation="relu",
+        pad_token_id: int = 0,
     ):
         super(EmbeddingTransformer, self).__init__()
 
         self.seq_len = seq_len
+        self.pad_token_id = pad_token_id
+
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.position_embedding = nn.Embedding(seq_len, d_model)
         self.encoder = nn.TransformerEncoder(
@@ -35,12 +38,16 @@ class EmbeddingTransformer(nn.Module):
         self.entity_feature = nn.Linear(d_model, entity_class_num)
 
     def forward(self, x):
+        src_key_padding_mask = (x != self.pad_token_id)
         embedding = self.embedding(x)
         embedding += self.position_embedding(
             torch.arange(self.seq_len).repeat(x.size(0), 1)
         )
 
-        feature = self.encoder(embedding.transpose(1, 0))  # (N,S,E) -> (S,N,E)
+        feature = self.encoder(
+            embedding.transpose(1, 0), src_key_padding_mask=src_key_padding_mask
+        )  # (N,S,E) -> (S,N,E)
+
         # first token in sequence used to intent classification
         intent_feature = self.intent_feature(feature[0, :, :])
         # other tokens in sequence used to entity classification

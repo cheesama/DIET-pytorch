@@ -19,7 +19,15 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
     
     """
 
-    def __init__(self, file_path, seq_len=128):
+    def __init__(
+        self,
+        file_path,
+        seq_len=128,
+        pad_token_id=0,
+        unk_token_id=1,
+        eos_token_id=2,
+        bos_token_id=3,
+    ):
         self.intent_dict = {}
         self.entity_dict = {}
         self.entity_dict[
@@ -28,6 +36,12 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         self.dataset = []
         self.seq_len = seq_len
+
+        # following torchnlp encoder preset
+        self.pad_token_id = pad_token_id
+        self.unk_token_id = unk_token_id
+        self.eos_token_id = eos_token_id
+        self.bos_token_id = bos_token_id
 
         current_intent_focus = ""
 
@@ -104,15 +118,17 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
         # bos_token=3, eos_token=2, unk_token=1, pad_token=0
         tokens = self.encoder.encode(text)
-        bos_tensor = torch.tensor([3])
-        eos_tensor = torch.tensor([2])
+        bos_tensor = torch.tensor([self.bos_token_id])
+        eos_tensor = torch.tensor([self.eos_token_id])
         tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
 
         if padding:
             if len(tokens) > self.seq_len:
                 tokens = tokens[: self.seq_len]
             else:
-                pad_tensor = torch.tensor([0] * (self.seq_len - len(tokens)))
+                pad_tensor = torch.tensor(
+                    [self.pad_token_id] * (self.seq_len - len(tokens))
+                )
                 tokens = torch.cat((tokens, pad_tensor), 0)
 
         if return_tensor:

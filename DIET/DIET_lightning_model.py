@@ -96,7 +96,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
         intent_pred, entity_pred = self.forward(tokens)
 
         intent_acc = get_accuracy(intent_idx, intent_pred)
-        entity_acc = get_accuracy(entity_idx, entity_pred)
+        entity_acc = get_accuracy(
+            entity_idx, entity_pred, ignore_index=self.dataset.pad_token_id
+        )
 
         intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
         entity_loss = self.loss_fn(
@@ -116,7 +118,11 @@ class DualIntentEntityTransformer(pl.LightningModule):
         avg_intent_acc = torch.stack([x["val_intent_acc"] for x in outputs]).mean()
         avg_entity_acc = torch.stack([x["val_entity_acc"] for x in outputs]).mean()
 
-        tensorboard_logs = {"val_loss": avg_loss, "intent_acc": avg_intent_acc, "entity_acc": avg_entity_acc}
+        tensorboard_logs = {
+            "val_loss": avg_loss,
+            "intent_acc": avg_intent_acc,
+            "entity_acc": avg_entity_acc,
+        }
 
         return {"avg_val_loss": avg_loss, "log": tensorboard_logs}
 

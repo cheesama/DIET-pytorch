@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, random_split
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 
-from torchnlp.metrics import get_accuracy
+from torchnlp.metrics import get_accuracy, get_token_accuracy
 
 from pytorch_lightning import Trainer
 
@@ -95,10 +95,10 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         intent_pred, entity_pred = self.forward(tokens)
 
-        intent_acc = get_accuracy(intent_idx, intent_pred)
-        entity_acc = get_accuracy(
-            entity_idx, entity_pred, ignore_index=self.dataset.pad_token_id
-        )
+        intent_acc = get_accuracy(intent_idx, intent_pred.max(1)[1])[0]
+        entity_acc = get_token_accuracy(
+            entity_idx, entity_pred.max(2)[1], ignore_index=self.dataset.pad_token_id
+        )[0]
 
         intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
         entity_loss = self.loss_fn(
@@ -106,8 +106,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
         )  # , ignore_index=0)
 
         return {
-            "val_intent_acc": intent_acc,
-            "val_entity_acc": entity_acc,
+            "val_intent_acc": torch.Tensor([intent_acc]),
+            "val_entity_acc": torch.Tensor([entity_acc]),
             "val_intent_loss": intent_loss,
             "val_entity_loss": entity_loss,
             "val_loss": intent_loss + entity_loss,

@@ -4,7 +4,7 @@ from argparse import Namespace
 from .DIET_lightning_model import DualIntentEntityTransformer
 
 import os, sys
-
+import torch
 
 def train(
     file_path,
@@ -16,7 +16,12 @@ def train(
     max_epochs=10,
     **kwargs
 ):
-    trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs,)
+    gpu_num = torch.cuda.device_count()
+
+    if gpu_num > 0:
+        trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num)
+    else:
+        trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs)
 
     model_args = {}
     model_args["data_file_path"] = file_path

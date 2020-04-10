@@ -79,6 +79,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
         )
 
     def training_step(self, batch, batch_idx, optimizer_idx):
+        self.model.train()
+
         tokens, intent_idx, entity_idx = batch
 
         intent_pred, entity_pred = self.forward(tokens)
@@ -91,16 +93,16 @@ class DualIntentEntityTransformer(pl.LightningModule):
             return {"loss": entity_loss, "entity_loss": entity_loss}
 
     def validation_step(self, batch, batch_idx):
+        self.model.eval()
+
         tokens, intent_idx, entity_idx = batch
 
         intent_pred, entity_pred = self.forward(tokens)
 
-        intent_acc = get_accuracy(
-            intent_idx, intent_pred.max(1)[1].to(intent_idx.device)
-        )[0]
+        intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1])[0]
         entity_acc = get_token_accuracy(
-            entity_idx,
-            entity_pred.max(2)[1].to(entity_idx.device),
+            entity_idx.cpu(),
+            entity_pred.max(2)[1],
             ignore_index=self.dataset.pad_token_id,
         )[0]
 

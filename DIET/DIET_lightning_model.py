@@ -99,10 +99,10 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         intent_pred, entity_pred = self.forward(tokens)
 
-        intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1])[0]
+        intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
         entity_acc = get_token_accuracy(
             entity_idx.cpu(),
-            entity_pred.max(2)[1],
+            entity_pred.max(2)[1].cpu(),
             ignore_index=self.dataset.pad_token_id,
         )[0]
 

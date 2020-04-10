@@ -6,6 +6,7 @@ from .DIET_lightning_model import DualIntentEntityTransformer
 import os, sys
 import torch
 
+
 def train(
     file_path,
     train_ratio=0.8,
@@ -19,7 +20,9 @@ def train(
     gpu_num = torch.cuda.device_count()
 
     if gpu_num > 0:
-        trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num)
+        trainer = Trainer(
+            default_save_path=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
+        )
     else:
         trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs)
 

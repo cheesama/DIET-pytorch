@@ -95,9 +95,13 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         intent_pred, entity_pred = self.forward(tokens)
 
-        intent_acc = get_accuracy(intent_idx, intent_pred.max(1)[1])[0]
+        intent_acc = get_accuracy(
+            intent_idx, intent_pred.max(1)[1].to(intent_idx.device)
+        )[0]
         entity_acc = get_token_accuracy(
-            entity_idx, entity_pred.max(2)[1], ignore_index=self.dataset.pad_token_id
+            entity_idx,
+            entity_pred.max(2)[1].to(entity_idx.device),
+            ignore_index=self.dataset.pad_token_id,
         )[0]
 
         intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))

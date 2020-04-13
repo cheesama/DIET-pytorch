@@ -14,7 +14,7 @@ def train(
     train_ratio=0.8,
     batch_size=32,
     optimizer="Adam",
-    lr=1e-4,
+    lr=5e-5,
     checkpoint_path=os.getcwd(),
     max_epochs=10,
     **kwargs

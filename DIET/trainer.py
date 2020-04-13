@@ -1,4 +1,6 @@
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 from argparse import Namespace
 
 from .DIET_lightning_model import DualIntentEntityTransformer
@@ -19,12 +21,20 @@ def train(
 ):
     gpu_num = torch.cuda.device_count()
 
+    checkpoint_callback = ModelCheckpoint(
+        filepath=checkpoint_path
+        + os.sep
+        + "DIET_{epoch:02d}-{val_loss:.2f}-{intent_acc:.3f}-{entity_acc:.3f}"
+    )
+
     if gpu_num > 0:
         trainer = Trainer(
             default_save_path=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
         )
     else:
         trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs)
+
+    trainer.checkpoint_callback = checkpoint_callback
 
     model_args = {}
     model_args["data_file_path"] = file_path

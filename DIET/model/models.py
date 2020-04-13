@@ -37,7 +37,7 @@ class EmbeddingTransformer(nn.Module):
         self.intent_feature = nn.Linear(d_model, intent_class_num)
         self.intent_confidence = nn.Softmax(dim=1)
         self.entity_feature = nn.Linear(d_model, entity_class_num)
-        self.entity_confidence = nn.Softmax(dim=1)
+        self.entity_confidence = nn.Softmax(dim=2)
 
     def forward(self, x):
         src_key_padding_mask = x == self.pad_token_id
@@ -56,7 +56,7 @@ class EmbeddingTransformer(nn.Module):
         # first token in sequence used to intent classification
         intent_feature = self.intent_feature(feature[0, :, :])
         intent_conf = self.intent_confidence(intent_feature)
-        
+
         # other tokens in sequence used to entity classification
         entity_feature = self.entity_feature(feature[:, :, :])
         entity_conf = self.entity_confidence(

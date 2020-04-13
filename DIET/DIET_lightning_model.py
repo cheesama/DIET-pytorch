@@ -99,16 +99,16 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         if optimizer_idx == 0:
             intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
-            tensorboard_logs["intent_loss"] = intent_loss
+            tensorboard_logs["train_intent_loss"] = intent_loss
             return {
-                "train_intent_loss": intent_loss,
+                "loss": intent_loss,
                 "log": tensorboard_logs,
             }
         if optimizer_idx == 1:
             entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long())
-            tensorboard_logs["entity_loss"] = entity_loss
+            tensorboard_logs["train_entity_loss"] = entity_loss
             return {
-                "train_entity_loss": entity_loss,
+                "loss": entity_loss,
                 "log": tensorboard_logs,
             }
 
@@ -131,12 +131,18 @@ class DualIntentEntityTransformer(pl.LightningModule):
             entity_pred.transpose(1, 2), entity_idx.long()
         )  # , ignore_index=0)
 
+        tensorboard_logs = {
+            "val_intent_acc": intent_acc,
+            "val_entity_acc": entity_acc,
+        }
+
         return {
             "val_intent_acc": torch.Tensor([intent_acc]),
             "val_entity_acc": torch.Tensor([entity_acc]),
             "val_intent_loss": intent_loss,
             "val_entity_loss": entity_loss,
             "val_loss": intent_loss + entity_loss,
+            "log": tensorboard_logs
         }
 
     def validation_epoch_end(self, outputs):

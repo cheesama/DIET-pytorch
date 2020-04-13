@@ -40,11 +40,12 @@ class EmbeddingTransformer(nn.Module):
     def forward(self, x):
         src_key_padding_mask = x != self.pad_token_id
         embedding = self.embedding(x)
-        position_embedding = (
-            torch.arange(self.seq_len).repeat(x.size(0), 1).type_as(embedding)
-        )
+        position_embedding = self.position_embedding(
+            torch.arange(self.seq_len).repeat(x.size(0), 1)
+        ).type_as(embedding)
 
         embedding += position_embedding
+
         """
         embedding += self.position_embedding(
             torch.arange(self.seq_len).repeat(x.size(0), 1).to(x.device)

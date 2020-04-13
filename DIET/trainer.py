@@ -29,7 +29,7 @@ def train(
 
     if gpu_num > 0:
         trainer = Trainer(
-            default_save_path=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
+            default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
         )
     else:
         trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs)

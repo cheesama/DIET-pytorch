@@ -85,12 +85,32 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         intent_pred, entity_pred = self.forward(tokens)
 
+        intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
+        entity_acc = get_token_accuracy(
+            entity_idx.cpu(),
+            entity_pred.max(2)[1].cpu(),
+            ignore_index=self.dataset.pad_token_id,
+        )[0]
+
+        tensorboard_logs = {
+            "train_intent_acc": intent_acc,
+            "train_entity_acc": entity_acc,
+        }
+
         if optimizer_idx == 0:
             intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
-            return {"loss": intent_loss, "intent_loss": intent_loss}
+            tensorboard_logs["intent_loss"] = intent_loss
+            return {
+                "train_intent_loss": intent_loss,
+                "log": tensorboard_logs,
+            }
         if optimizer_idx == 1:
             entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long())
-            return {"loss": entity_loss, "entity_loss": entity_loss}
+            tensorboard_logs["entity_loss"] = entity_loss
+            return {
+                "train_entity_loss": entity_loss,
+                "log": tensorboard_logs,
+            }
 
     def validation_step(self, batch, batch_idx):
         self.model.eval()

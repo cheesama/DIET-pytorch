@@ -139,10 +139,10 @@ class DualIntentEntityTransformer(pl.LightningModule):
         }
 
         return {
-            "val/intent/acc": torch.Tensor([intent_acc]),
-            "val/entity/acc": torch.Tensor([entity_acc]),
-            "val/intent/loss": intent_loss,
-            "val/entity/loss": entity_loss,
+            "val_intent_acc": torch.Tensor([intent_acc]),
+            "val_entity_acc": torch.Tensor([entity_acc]),
+            "val_intent_loss": intent_loss,
+            "val_entity_loss": entity_loss,
             "val_loss": intent_loss + entity_loss,
             "log": tensorboard_logs,
         }

@@ -142,7 +142,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
             "val_intent_loss": intent_loss,
             "val_entity_loss": entity_loss,
             "val_loss": intent_loss + entity_loss,
-            "log": tensorboard_logs
+            "log": tensorboard_logs,
         }
 
     def validation_epoch_end(self, outputs):

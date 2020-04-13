@@ -93,20 +93,20 @@ class DualIntentEntityTransformer(pl.LightningModule):
         )[0]
 
         tensorboard_logs = {
-            "train_intent_acc": intent_acc,
-            "train_entity_acc": entity_acc,
+            "train/intent/acc": intent_acc,
+            "train/entity/acc": entity_acc,
         }
 
         if optimizer_idx == 0:
             intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
-            tensorboard_logs["train_intent_loss"] = intent_loss
+            tensorboard_logs["train/intent/loss"] = intent_loss
             return {
                 "loss": intent_loss,
                 "log": tensorboard_logs,
             }
         if optimizer_idx == 1:
             entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long())
-            tensorboard_logs["train_entity_loss"] = entity_loss
+            tensorboard_logs["train/entity/loss"] = entity_loss
             return {
                 "loss": entity_loss,
                 "log": tensorboard_logs,
@@ -132,15 +132,17 @@ class DualIntentEntityTransformer(pl.LightningModule):
         )  # , ignore_index=0)
 
         tensorboard_logs = {
-            "val_intent_acc": intent_acc,
-            "val_entity_acc": entity_acc,
+            "val/intent/loss": intent_loss,
+            "val/entity/loss": entity_loss,
+            "val/intent/acc": intent_acc,
+            "val/entity/acc": entity_acc,
         }
 
         return {
-            "val_intent_acc": torch.Tensor([intent_acc]),
-            "val_entity_acc": torch.Tensor([entity_acc]),
-            "val_intent_loss": intent_loss,
-            "val_entity_loss": entity_loss,
+            "val/intent/acc": torch.Tensor([intent_acc]),
+            "val/entity/acc": torch.Tensor([entity_acc]),
+            "val/intent/loss": intent_loss,
+            "val/entity/loss": entity_loss,
             "val_loss": intent_loss + entity_loss,
             "log": tensorboard_logs,
         }
@@ -151,24 +153,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
         avg_entity_acc = torch.stack([x["val_entity_acc"] for x in outputs]).mean()
 
         tensorboard_logs = {
-            "val_loss": avg_loss,
-            "intent_acc": avg_intent_acc,
-            "entity_acc": avg_entity_acc,
+            "avg_val_loss": avg_loss,
+            "avg_val_intent_acc": avg_intent_acc,
+            "avg_val_entity_acc": avg_entity_acc,
         }
 
         return {"avg_val_loss": avg_loss, "log": tensorboard_logs}
-
-    def valdition_epoch_end(self, outputs):
-        avg_intent_loss = torch.stack([x["val_intent_loss"] for x in outputs]).mean()
-        avg_entity_loss = torch.stack([x["val_entity_loss"] for x in outputs]).mean()
-
-        tensorboard_logs = {
-            "val_intent_loss": avg_intent_loss,
-            "val_entity_loss": avg_entity_loss,
-        }
-
-        return {
-            "val_intent_loss": avg_intent_loss,
-            "val_entity_loss": avg_entity_loss,
-            "log": tensorboard_logs,
-        }

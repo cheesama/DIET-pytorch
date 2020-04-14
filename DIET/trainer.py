@@ -22,19 +22,17 @@ def train(
     gpu_num = torch.cuda.device_count()
 
     checkpoint_callback = ModelCheckpoint(
-        filepath="{epoch:02d}-{val_loss:.2f}-{intent_acc:.3f}-{entity_acc:.3f}",
+        filepath=checkpoint_path + os.sep + '{epoch:02d}-{val_loss:.2f}-{intent_acc:.3f}-{entity_acc:.3f}',
         prefix="DIET",
     )
 
     if gpu_num > 0:
         trainer = Trainer(
-            default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
+            default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num, checkpoint_callback=checkpoint_callback
         )
     else:
-        trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs)
-
-    trainer.checkpoint_callback = checkpoint_callback
-
+        trainer = Trainer(default_save_path=checkpoint_path, max_epochs=max_epochs, checkpoint_callback=checkpoint_callback)
+        
     model_args = {}
     model_args["data_file_path"] = file_path
     model_args["train_ratio"] = train_ratio

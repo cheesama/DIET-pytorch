@@ -22,9 +22,8 @@ def train(
     gpu_num = torch.cuda.device_count()
 
     checkpoint_callback = ModelCheckpoint(
-        filepath=checkpoint_path
-        + os.sep
-        + "DIET_{epoch:02d}-{val_loss:.2f}-{intent_acc:.3f}-{entity_acc:.3f}"
+        filepath="{epoch:02d}-{val_loss:.2f}-{intent_acc:.3f}-{entity_acc:.3f}",
+        prefix="DIET",
     )
 
     if gpu_num > 0:

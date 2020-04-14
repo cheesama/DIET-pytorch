@@ -14,6 +14,8 @@ from .model.models import EmbeddingTransformer
 
 import os, sys
 import multiprocessing
+import dill
+
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -25,7 +27,12 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         self.hparams = hparams
 
-        self.dataset = RasaIntentEntityDataset(self.hparams.data_file_path)
+        if not hasattr(self, "nlu_data"):
+            self.nlu_data = open(
+                self.hparams.data_file_path, encoding="utf-8"
+            ).readlines()
+
+        self.dataset = RasaIntentEntityDataset(self.nlu_data)
 
         self.model = EmbeddingTransformer(
             vocab_size=self.dataset.get_vocab_size(),

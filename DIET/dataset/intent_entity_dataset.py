@@ -21,7 +21,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        file_path,
+        markdown_lines: list,
         seq_len=128,
         pad_token_id=0,
         unk_token_id=1,
@@ -45,72 +45,64 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         current_intent_focus = ""
 
-        with open(file_path, "r", encoding="utf-8") as nluFile:
-            for line in tqdm(
-                nluFile.readlines(),
-                desc="Extracting Intent & Entity in NLU markdown files...",
-            ):
-                if len(line.strip()) < 2:
-                    continue
+        for line in tqdm(
+            markdown_lines, desc="Extracting Intent & Entity in NLU markdown files...",
+        ):
+            if len(line.strip()) < 2:
+                continue
 
-                if "## " in line:
-                    if "intent:" in line:
-                        current_intent_focus = line.split(":")[1].strip()
+            if "## " in line:
+                if "intent:" in line:
+                    current_intent_focus = line.split(":")[1].strip()
 
-                        if current_intent_focus not in self.intent_dict.keys():
-                            self.intent_dict[current_intent_focus] = len(
-                                self.intent_dict.keys()
-                            )
+                    if current_intent_focus not in self.intent_dict.keys():
+                        self.intent_dict[current_intent_focus] = len(
+                            self.intent_dict.keys()
+                        )
 
-                    else:
-                        current_intent_focus = ""
                 else:
-                    if (
-                        current_intent_focus != ""
-                    ):  # intent & entity sentence occur case
-                        text = line[2:]
+                    current_intent_focus = ""
+            else:
+                if current_intent_focus != "":  # intent & entity sentence occur case
+                    text = line[2:]
 
-                        entity_value_list = []
-                        for value in re.finditer(r"\[[^)]*\]", text):
-                            entity_value_list.append(
-                                text[value.start() + 1 : value.end() - 1]
+                    entity_value_list = []
+                    for value in re.finditer(r"\[[^)]*\]", text):
+                        entity_value_list.append(
+                            text[value.start() + 1 : value.end() - 1]
+                        )
+
+                    entity_type_list = []
+                    for type_str in re.finditer(r"\([^)]*\)", text):
+                        entity_type = text[type_str.start() + 1 : type_str.end() - 1]
+                        entity_type_list.append(entity_type)
+
+                        if entity_type not in self.entity_dict.keys():
+                            self.entity_dict[entity_type] = len(self.entity_dict.keys())
+
+                    text = re.sub(r"\([^)]*\)", "", text)
+                    text = text.replace("[", "").replace("]", "")
+
+                    each_data_dict = {}
+                    each_data_dict["text"] = text.strip()
+                    each_data_dict["intent"] = current_intent_focus
+                    each_data_dict["intent_idx"] = self.intent_dict[
+                        current_intent_focus
+                    ]
+                    each_data_dict["entities"] = []
+
+                    for value, type_str in zip(entity_value_list, entity_type_list):
+                        for entity in re.finditer(value, text):
+                            each_data_dict["entities"].append(
+                                {
+                                    "start": entity.start(),
+                                    "end": entity.end(),
+                                    "entity": type_str,
+                                    "entity_idx": self.entity_dict[type_str],
+                                }
                             )
 
-                        entity_type_list = []
-                        for type_str in re.finditer(r"\([^)]*\)", text):
-                            entity_type = text[
-                                type_str.start() + 1 : type_str.end() - 1
-                            ]
-                            entity_type_list.append(entity_type)
-
-                            if entity_type not in self.entity_dict.keys():
-                                self.entity_dict[entity_type] = len(
-                                    self.entity_dict.keys()
-                                )
-
-                        text = re.sub(r"\([^)]*\)", "", text)
-                        text = text.replace("[", "").replace("]", "")
-
-                        each_data_dict = {}
-                        each_data_dict["text"] = text.strip()
-                        each_data_dict["intent"] = current_intent_focus
-                        each_data_dict["intent_idx"] = self.intent_dict[
-                            current_intent_focus
-                        ]
-                        each_data_dict["entities"] = []
-
-                        for value, type_str in zip(entity_value_list, entity_type_list):
-                            for entity in re.finditer(value, text):
-                                each_data_dict["entities"].append(
-                                    {
-                                        "start": entity.start(),
-                                        "end": entity.end(),
-                                        "entity": type_str,
-                                        "entity_idx": self.entity_dict[type_str],
-                                    }
-                                )
-
-                        self.dataset.append(each_data_dict)
+                    self.dataset.append(each_data_dict)
 
         # encoder(tokenizer) definition
         self.encoder = CharacterEncoder([data["text"] for data in self.dataset])

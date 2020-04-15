@@ -27,6 +27,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         self.hparams = hparams
 
+        print ("model params")
+        print (self.hparams)
+
         if self.hparams.data_file_path is not None:
             self.dataset = RasaIntentEntityDataset(
                 open(self.hparams.data_file_path, encoding="utf-8").readlines()
@@ -37,6 +40,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
             seq_len=self.dataset.get_seq_len(),
             intent_class_num=len(self.dataset.get_intent_idx()),
             entity_class_num=len(self.dataset.get_entity_idx()),
+            num_encoder_layers=self.hparams.num_encoder_layers
         )
 
         self.train_ratio = self.hparams.train_ratio

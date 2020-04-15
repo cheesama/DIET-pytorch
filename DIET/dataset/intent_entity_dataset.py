@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from tqdm import tqdm
+from typing import List
 from torchnlp.encoders.text import CharacterEncoder
 
 import torch
@@ -9,7 +10,7 @@ import re
 
 class RasaIntentEntityDataset(torch.utils.data.Dataset):
     """
-    RASA NLU markdown file based Custom Dataset Class
+    RASA NLU markdown file lines based Custom Dataset Class
 
     Dataset Example in nlu.md
 
@@ -21,7 +22,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        markdown_lines: list,
+        markdown_lines: List[str],
         seq_len=128,
         pad_token_id=0,
         unk_token_id=1,

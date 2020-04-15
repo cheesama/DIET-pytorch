@@ -28,12 +28,14 @@ def train(
     )
 
     model_args = {}
+
     #training args
-    model_args["data_file_path"] = file_path
+    model_args["nlu_data"] = open(file_path, encoding='utf-8').readlines()
     model_args["train_ratio"] = train_ratio
     model_args["batch_size"] = batch_size
     model_args["optimizer"] = optimizer
     model_args["lr"] = lr
+    
     #model args
     model_args["num_encoder_layers"] = num_encoder_layers
 

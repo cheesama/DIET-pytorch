@@ -5,15 +5,12 @@ import torch
 model = None
 
 def load_model(checkpoint_path: str):
-    model = DualIntentEntityTransformer.load_from_checkpoint(
-        checkpoint_path, data_file_path=None
-    )
+    model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
 
     model.model.eval()
     model.model.freeze()
 
     return model
-
 
 def inference(text: str):
     if model is None:

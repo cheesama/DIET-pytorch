@@ -27,12 +27,10 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         self.hparams = hparams
 
-        if not hasattr(self, "nlu_data"):
-            self.nlu_data = open(
-                self.hparams.data_file_path, encoding="utf-8"
-            ).readlines()
-
-        self.dataset = RasaIntentEntityDataset(self.nlu_data)
+        if self.hparams.data_file_path is not None:
+            self.dataset = RasaIntentEntityDataset(
+                open(self.hparams.data_file_path, encoding="utf-8").readlines()
+            )
 
         self.model = EmbeddingTransformer(
             vocab_size=self.dataset.get_vocab_size(),

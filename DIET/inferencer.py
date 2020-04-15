@@ -6,7 +6,9 @@ model = None
 
 
 def load_model(checkpoint_path: str):
-    model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
+    model = DualIntentEntityTransformer.load_from_checkpoint(
+        checkpoint_path, data_file_path=None
+    )
 
     return model
 

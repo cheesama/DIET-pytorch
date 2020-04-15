@@ -20,16 +20,13 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
-
 class DualIntentEntityTransformer(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
 
         self.hparams = hparams
-
-        print ("model params")
-        print (self.hparams)
-
+        print (f'model params: {self.hparams}')
+        
         if self.hparams.data_file_path is not None:
             self.dataset = RasaIntentEntityDataset(
                 open(self.hparams.data_file_path, encoding="utf-8").readlines()

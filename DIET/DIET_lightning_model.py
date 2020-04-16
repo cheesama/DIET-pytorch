@@ -147,9 +147,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
         avg_entity_acc = torch.stack([x["val_entity_acc"] for x in outputs]).mean()
 
         tensorboard_logs = {
-            "val_loss": avg_loss,
-            "val_intent_acc": avg_intent_acc,
-            "val_entity_acc": avg_entity_acc,
+            "val/loss": avg_loss,
+            "val/intent_acc": avg_intent_acc,
+            "val/entity_acc": avg_entity_acc,
         }
 
         return {

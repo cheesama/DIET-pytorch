@@ -15,11 +15,11 @@ def train(
     batch_size=32,
     optimizer="Adam",
     intent_optimizer_lr=1e-5,
-    entity_optimizer_lr=5e-5,
+    entity_optimizer_lr=2e-5,
     checkpoint_path=os.getcwd(),
     max_epochs=10,
     #model args
-    num_encoder_layers=1,
+    num_encoder_layers=3,
     **kwargs
 ):
     gpu_num = torch.cuda.device_count()

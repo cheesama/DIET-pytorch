@@ -24,6 +24,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
 
+        self.hparams = hparams
+
         self.dataset = RasaIntentEntityDataset(self.hparams.nlu_data)
 
         self.model = EmbeddingTransformer(

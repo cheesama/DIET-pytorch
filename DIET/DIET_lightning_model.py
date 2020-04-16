@@ -39,8 +39,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.train_ratio = self.hparams.train_ratio
         self.batch_size = self.hparams.batch_size
         self.optimizer = self.hparams.optimizer
-        self.lr = self.hparams.lr
-
+        self.intent_optimizer_lr = self.hparams.intent_optimizer_lr
+        self.entity_optimizer_lr = self.hparams.entity_optimizer_lr
         self.loss_fn = nn.CrossEntropyLoss()
 
     def forward(self, x):
@@ -70,8 +70,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
         return val_loader
 
     def configure_optimizers(self):
-        intent_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.lr})")
-        entity_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.lr})")
+        intent_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.intent_optimizer_lr})")
+        entity_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.entity_optimizer_lr})")
         return (
             [intent_optimizer, entity_optimizer],
             [

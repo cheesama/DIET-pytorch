@@ -14,11 +14,12 @@ def train(
     train_ratio=0.8,
     batch_size=32,
     optimizer="Adam",
-    lr=5e-5,
+    intent_optimizer_lr=1e-5,
+    entity_optimizer_lr=2e-5,
     checkpoint_path=os.getcwd(),
     max_epochs=10,
     #model args
-    num_encoder_layers=1,
+    num_encoder_layers=3,
     **kwargs
 ):
     gpu_num = torch.cuda.device_count()
@@ -34,7 +35,8 @@ def train(
     model_args["train_ratio"] = train_ratio
     model_args["batch_size"] = batch_size
     model_args["optimizer"] = optimizer
-    model_args["lr"] = lr
+    model_args["intent_optimizer_lr"] = intent_optimizer_lr
+    model_args["entity_optimizer_lr"] = entity_optimizer_lr
     
     #model args
     model_args["num_encoder_layers"] = num_encoder_layers

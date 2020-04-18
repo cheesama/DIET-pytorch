@@ -31,6 +31,7 @@ def train(
     model_args = {}
 
     #training args
+    model_args["max_epochs"] = max_epochs
     model_args["nlu_data"] = open(file_path, encoding='utf-8').readlines()
     model_args["train_ratio"] = train_ratio
     model_args["batch_size"] = batch_size

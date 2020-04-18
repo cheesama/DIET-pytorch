@@ -48,11 +48,17 @@ def inference(text: str, intent_topk=5):
     start_idx = 0
     for i, char_idx in enumerate(entity_indices):
         if i > 0 and entity_indices[i-1] != entity_indices[i]:
+            if char_idx == 0: # if meet 'O' tag, skip
+                continue
+
             end_idx = i-1
             entities.append({'start': start_idx, 'end':end_idx, 'value':text[1 + start_idx:end_idx + 1], 'entity': entity_dict[entity_indices[i-1]]})
             start_idx = i
 
         if i == len(entity_indices)-1 and entity_indices[i-1] == entity_indices[i]:
+            if char_idx == 0: # if meet 'O' tag, skip
+                continue
+
             end_idx = i
             entities.append({'start': start_idx, 'end':end_idx, 'value':text[1 + start_idx:end_idx + 1], 'entity': entity_dict[entity_indices[i-1]]})
 

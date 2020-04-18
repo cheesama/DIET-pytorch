@@ -33,7 +33,7 @@ It is implemented [pytorch-lightning](https://github.com/PyTorchLightning/pytorc
     All parameters in trainer including kwargs saved as a modeel hparams
 
     User can check these paramters via checkpoint tensorboard logs
-    ![tensorboard log](img/tensorboard_log.png)
+    ![tensorboard log](img/tensorboard_log.PNG)
 
 2. Inference
 

@@ -5,4 +5,4 @@ pycm
 pytorch-lightning
 pytorch-nlp
 sentencepiece
-torch==1.4
+torch

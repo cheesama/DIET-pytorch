@@ -38,9 +38,9 @@ It is implemented [pytorch-lightning](https://github.com/PyTorchLightning/pytorc
 2. Inference
 
     ```
-    from DIET import inferencer
+    from DIET import Inferencer
 
-    inferencer.load_model(checkpoint_path)
+    inferencer = Inferencer(checkpoint_path)
     inferencer.inference(text: str, intent_topk=5)
     ```
 

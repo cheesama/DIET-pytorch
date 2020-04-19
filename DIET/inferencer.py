@@ -12,8 +12,6 @@ class Inferencer:
         self.model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
         self.model.model.eval()
 
-        print (self.model)
-
         self.intent_dict = {}
         for k, v in self.model.dataset.intent_dict.items():
             self.intent_dict[v] = k
@@ -22,6 +20,12 @@ class Inferencer:
         for k, v in self.model.dataset.entity_dict.items():
             self.entity_dict[v] = k
 
+        print ('intent dictionary')
+        print (self.intent_dict)
+
+        print ('entity dictionary')
+        print (self.entity_dict)
+
     def inference(self, text: str, intent_topk=5):
         if self.model is None:
             raise ValueError(
@@ -29,8 +33,6 @@ class Inferencer:
             )
 
         tokens = self.model.dataset.tokenize(text)
-
-        print (tokens)
 
         intent_result, entity_result = self.model.forward(tokens.unsqueeze(0))
 
@@ -43,7 +45,7 @@ class Inferencer:
         for i, (value, index) in enumerate(
             list(zip(rank_values.tolist(), rank_indicies.tolist()))
         ):
-            intent_ranking.append({"confidence": value, "name": intent_dict[index]})
+            intent_ranking.append({"confidence": value, "name": self.intent_dict[index]})
 
             if i == 0:
                 intent["name"] = self.intent_dict[index]
@@ -51,49 +53,33 @@ class Inferencer:
 
         # mapping entity result
         entities = []
+
         # except first sequnce token whcih indicate BOS token
-        _, entity_indices = torch.max((entity_result)[0][:, 1:, :], dim=1)
-        entity_indices.tolist()
+        _, entity_indices = torch.max((entity_result)[0][1:,:], dim=1)
+        entity_indices = entity_indices.tolist()[:len(text)]
 
-        start_idx = 0
+        start_idx = -1
         for i, char_idx in enumerate(entity_indices):
-            if i > 0 and entity_indices[i - 1] != entity_indices[i]:
-                if char_idx == 0:  # if meet 'O' tag, skip
-                    continue
-
+            if char_idx != 0 and start_idx == -1:
+                start_idx = i
+            elif i > 0 and entity_indices[i-1] != entity_indices[i]:
                 end_idx = i - 1
                 entities.append(
                     {
                         "start": start_idx,
                         "end": end_idx,
-                        "value": text[1 + start_idx : end_idx + 1],
+                        "value": text[start_idx : end_idx + 1],
                         "entity": self.entity_dict[entity_indices[i - 1]],
                     }
                 )
-                start_idx = i
+                start_idx = -1
 
-            if (
-                i == len(entity_indices) - 1
-                and entity_indices[i - 1] == entity_indices[i]
-            ):
-                if char_idx == 0:  # if meet 'O' tag, skip
-                    continue
-
-                end_idx = i
-                entities.append(
-                    {
-                        "start": start_idx,
-                        "end": end_idx,
-                        "value": text[1 + start_idx : end_idx + 1],
-                        "entity": self.entity_dict[entity_indices[i - 1]],
-                    }
-                )
 
         return {
             "text": text,
             "intent": intent,
             "intent_ranking": intent_ranking,
-            "entities": entity_dict,
+            "entities": entities,
         }
 
         # rasa NLU entire result format

@@ -12,10 +12,10 @@ def load_model(checkpoint_path: str):
 
     model.model.eval()
     
-    for k, v in model.dataset.intent_dict:
+    for k, v in model.dataset.intent_dict.items():
         intent_dict[v] = k
 
-    for k, v in model.dataset.entity_dict:
+    for k, v in model.dataset.entity_dict.items():
         entity_dict[v] = k
 
     return model

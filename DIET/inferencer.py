@@ -21,7 +21,7 @@ class Inferencer:
             self.entity_dict[v] = k
 
     def inference(self, text: str, intent_topk=5):
-        if model is None:
+        if self.model is None:
             raise ValueError(
                 "model is not loaded, first call load_model(checkpoint_path)"
             )

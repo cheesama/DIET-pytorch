@@ -29,6 +29,9 @@ class Inferencer:
             )
 
         tokens = self.model.dataset.tokenize(text)
+
+        print (tokens.size())
+
         intent_result, entity_result = self.model.forward(tokens)
 
         # mapping intent result

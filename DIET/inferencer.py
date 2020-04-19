@@ -7,88 +7,111 @@ model = None
 intent_dict = {}
 entity_dict = {}
 
-def load_model(checkpoint_path: str):
-    model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
+class Inferencer:
+    def __init__(self, checkpoint_path: str):
+        self.model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
+        self.model.model.eval()
 
-    model.model.eval()
-    
-    for k, v in model.dataset.intent_dict.items():
-        intent_dict[v] = k
+        self.intent_dict = {}
+        for k, v in self.model.dataset.intent_dict.items():
+            self.intent_dict[v] = k
 
-    for k, v in model.dataset.entity_dict.items():
-        entity_dict[v] = k
+        self.entity_dict = {}
+        for k, v in self.model.dataset.entity_dict.items():
+            self.entity_dict[v] = k
 
-    return model
+    def inference(self, text: str, intent_topk=5):
+        if model is None:
+            raise ValueError(
+                "model is not loaded, first call load_model(checkpoint_path)"
+            )
 
-def inference(text: str, intent_topk=5):
-    if model is None:
-        raise ValueError("model is not loaded, first call load_model(checkpoint_path)")
+        tokens = self.model.dataset.tokenize(text)
+        intent_result, entity_result = self.model.forward(tokens)
 
-    tokens = model.dataset.tokenize(text)
-    intent_result, entity_result = model.forward(tokens)
+        # mapping intent result
+        rank_values, rank_indicies = torch.topk(
+            nn.Softmax(dim=1)(intent_result)[0], k=intent_topk
+        )
+        intent = {}
+        intent_ranking = []
+        for i, (value, index) in enumerate(
+            list(zip(rank_values.tolist(), rank_indicies.tolist()))
+        ):
+            intent_ranking.append({"confidence": value, "name": intent_dict[index]})
 
-    # mapping intent result
-    rank_values, rank_indicies = torch.topk(nn.Softmax(dim=1)(intent_result)[0], k=intent_topk)
-    intent = {}
-    intent_ranking = []
-    for i, (value, index) in enumerate(list(zip(rank_values.tolist(), rank_indicies.tolist()))):
-        intent_ranking.append({'confidence': value, 'name': intent_dict[index]})
+            if i == 0:
+                intent["name"] = self.intent_dict[index]
+                intent["confidence"] = value
 
-        if i == 0:
-            intent['name'] = intent_dict[index]
-            intent['confidence'] = value
+        # mapping entity result
+        entities = []
+        # except first sequnce token whcih indicate BOS token
+        _, entity_indices = torch.max((entity_result)[0][:, 1:, :], dim=1)
+        entity_indices.tolist()
 
-    # mapping entity result
-    entities=[]
-    # except first sequnce token whcih indicate BOS token
-    _, entity_indices = torch.max((entity_result)[0][:,1:,:], dim=1)
-    entity_indices.tolist()
+        start_idx = 0
+        for i, char_idx in enumerate(entity_indices):
+            if i > 0 and entity_indices[i - 1] != entity_indices[i]:
+                if char_idx == 0:  # if meet 'O' tag, skip
+                    continue
 
-    start_idx = 0
-    for i, char_idx in enumerate(entity_indices):
-        if i > 0 and entity_indices[i-1] != entity_indices[i]:
-            if char_idx == 0: # if meet 'O' tag, skip
-                continue
+                end_idx = i - 1
+                entities.append(
+                    {
+                        "start": start_idx,
+                        "end": end_idx,
+                        "value": text[1 + start_idx : end_idx + 1],
+                        "entity": self.entity_dict[entity_indices[i - 1]],
+                    }
+                )
+                start_idx = i
 
-            end_idx = i-1
-            entities.append({'start': start_idx, 'end':end_idx, 'value':text[1 + start_idx:end_idx + 1], 'entity': entity_dict[entity_indices[i-1]]})
-            start_idx = i
+            if (
+                i == len(entity_indices) - 1
+                and entity_indices[i - 1] == entity_indices[i]
+            ):
+                if char_idx == 0:  # if meet 'O' tag, skip
+                    continue
 
-        if i == len(entity_indices)-1 and entity_indices[i-1] == entity_indices[i]:
-            if char_idx == 0: # if meet 'O' tag, skip
-                continue
+                end_idx = i
+                entities.append(
+                    {
+                        "start": start_idx,
+                        "end": end_idx,
+                        "value": text[1 + start_idx : end_idx + 1],
+                        "entity": self.entity_dict[entity_indices[i - 1]],
+                    }
+                )
 
-            end_idx = i
-            entities.append({'start': start_idx, 'end':end_idx, 'value':text[1 + start_idx:end_idx + 1], 'entity': entity_dict[entity_indices[i-1]]})
+        return {
+            "text": text,
+            "intent": intent,
+            "intent_ranking": intent_ranking,
+            "entities": entity_dict,
+        }
 
-    return {
-        "text": text,
-        "intent": intent,
-        "intent_ranking": intent_ranking,
-        "entities": entity_dict
-    }
-
-    # rasa NLU entire result format
-    """
-    {
-        "text": "Hello!",
-        "intent": {
-            "confidence": 0.6323,
-            "name": "greet"
-        },
-        "intent_ranking": [
-            {
+        # rasa NLU entire result format
+        """
+        {
+            "text": "Hello!",
+            "intent": {
                 "confidence": 0.6323,
                 "name": "greet"
-            }
-        ],
-        "entities": [
-            {
-                "start": 0,
-                "end": 0,
-                "value": "string",
-                "entity": "string"
-            }
-        ]
-    }
-    """
+            },
+            "intent_ranking": [
+                {
+                    "confidence": 0.6323,
+                    "name": "greet"
+                }
+            ],
+            "entities": [
+                {
+                    "start": 0,
+                    "end": 0,
+                    "value": "string",
+                    "entity": "string"
+                }
+            ]
+        }
+        """

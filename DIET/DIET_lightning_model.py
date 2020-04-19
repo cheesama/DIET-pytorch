@@ -20,6 +20,7 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
+
 class DualIntentEntityTransformer(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
@@ -33,7 +34,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
             seq_len=self.dataset.get_seq_len(),
             intent_class_num=len(self.dataset.get_intent_idx()),
             entity_class_num=len(self.dataset.get_entity_idx()),
-            num_encoder_layers=self.hparams.num_encoder_layers
+            num_encoder_layers=self.hparams.num_encoder_layers,
         )
 
         self.train_ratio = self.hparams.train_ratio
@@ -70,13 +71,20 @@ class DualIntentEntityTransformer(pl.LightningModule):
         return val_loader
 
     def configure_optimizers(self):
-        intent_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.intent_optimizer_lr})")
-        entity_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.entity_optimizer_lr})")
+        intent_optimizer = eval(
+            f"{self.optimizer}(self.parameters(), lr={self.intent_optimizer_lr})"
+        )
+        entity_optimizer = eval(
+            f"{self.optimizer}(self.parameters(), lr={self.entity_optimizer_lr})"
+        )
 
         return (
             [intent_optimizer, entity_optimizer],
-            #[StepLR(intent_optimizer, step_size=1),StepLR(entity_optimizer, step_size=1),],
-            [ReduceLROnPlateau(intent_optimizer, patience=1),ReduceLROnPlateau(entity_optimizer, patience=1),],
+            # [StepLR(intent_optimizer, step_size=1),StepLR(entity_optimizer, step_size=1),],
+            [
+                ReduceLROnPlateau(intent_optimizer, patience=1),
+                ReduceLROnPlateau(entity_optimizer, patience=1),
+            ],
         )
 
     def training_step(self, batch, batch_idx, optimizer_idx):

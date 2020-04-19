@@ -30,9 +30,9 @@ class Inferencer:
 
         tokens = self.model.dataset.tokenize(text)
 
-        print (tokens.size())
+        print (tokens)
 
-        intent_result, entity_result = self.model.forward(tokens)
+        intent_result, entity_result = self.model.forward(tokens.unsqueeze(0))
 
         # mapping intent result
         rank_values, rank_indicies = torch.topk(

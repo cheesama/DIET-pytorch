@@ -3,7 +3,7 @@ from argparse import Namespace
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
 from torch.optim import Adam
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 
 from torchnlp.metrics import get_accuracy, get_token_accuracy
 
@@ -72,12 +72,11 @@ class DualIntentEntityTransformer(pl.LightningModule):
     def configure_optimizers(self):
         intent_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.intent_optimizer_lr})")
         entity_optimizer = eval(f"{self.optimizer}(self.parameters(), lr={self.entity_optimizer_lr})")
+
         return (
             [intent_optimizer, entity_optimizer],
-            [
-                StepLR(intent_optimizer, step_size=1),
-                StepLR(entity_optimizer, step_size=1),
-            ],
+            #[StepLR(intent_optimizer, step_size=1),StepLR(entity_optimizer, step_size=1),],
+            [ReduceLROnPlateau(intent_optimizer, patience=1),ReduceLROnPlateau(entity_optimizer, patience=1),],
         )
 
     def training_step(self, batch, batch_idx, optimizer_idx):

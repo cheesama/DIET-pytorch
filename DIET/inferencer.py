@@ -12,6 +12,8 @@ class Inferencer:
         self.model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
         self.model.model.eval()
 
+        print (self.model)
+
         self.intent_dict = {}
         for k, v in self.model.dataset.intent_dict.items():
             self.intent_dict[v] = k

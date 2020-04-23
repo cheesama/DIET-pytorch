@@ -22,6 +22,7 @@ class Inferencer:
 
         print ('intent dictionary')
         print (self.intent_dict)
+        print ()
 
         print ('entity dictionary')
         print (self.entity_dict)
@@ -58,9 +59,9 @@ class Inferencer:
         _, entity_indices = torch.max((entity_result)[0][1:,:], dim=1)
         entity_indices = entity_indices.tolist()[:len(text)]
 
-        start_idx = 0
+        start_idx = -1
         for i, char_idx in enumerate(entity_indices):
-            if char_idx != 0 and start_idx == 0:
+            if char_idx != 0 and start_idx == -1:
                 start_idx = i
             elif i > 0 and entity_indices[i-1] != entity_indices[i]:
                 end_idx = i - 1
@@ -68,11 +69,11 @@ class Inferencer:
                     {
                         "start": start_idx,
                         "end": end_idx,
-                        "value": text[start_idx : end_idx + 1],
+                        "value": text[max(start_idx, 0) : end_idx + 1],
                         "entity": self.entity_dict[entity_indices[i - 1]],
                     }
                 )
-                start_idx = 0
+                start_idx = -1
 
 
         return {

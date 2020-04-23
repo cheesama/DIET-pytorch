@@ -67,7 +67,7 @@ class Inferencer:
                 end_idx = i - 1
                 entities.append(
                     {
-                        "start": start_idx,
+                        "start": max(start_idx,0),
                         "end": end_idx,
                         "value": text[max(start_idx, 0) : end_idx + 1],
                         "entity": self.entity_dict[entity_indices[i - 1]],

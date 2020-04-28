@@ -114,12 +114,14 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         # bos_token=3, eos_token=2, unk_token=1, pad_token=0
         if self.tokenize_fn is not None:
             tokens = self.tokenize_fn(text)
+            if type(tokens) == list:
+                tokens = torch.LongTensor(tokens)
         else:
             tokens = self.encoder.encode(text)
 
-        bos_tensor = torch.tensor([self.bos_token_id])
-        eos_tensor = torch.tensor([self.eos_token_id])
-        tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
+            bos_tensor = torch.tensor([self.bos_token_id])
+            eos_tensor = torch.tensor([self.eos_token_id])
+            tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
 
         if padding:
             if len(tokens) > self.seq_len:

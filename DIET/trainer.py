@@ -17,8 +17,8 @@ def train(
     entity_optimizer_lr=2e-5,
     checkpoint_path=os.getcwd(),
     max_epochs=20,
-    tokenize_fn=ElectraTokenizer.from_pretrained("monologg/koelectra-small-discriminator").encode,
-    #tokenize_fn=None,
+    tokenizer=ElectraTokenizer.from_pretrained("monologg/koelectra-small-discriminator"),
+    #tokenizer=None,
     # model args
     num_encoder_layers=1,
     **kwargs
@@ -39,7 +39,9 @@ def train(
     model_args["optimizer"] = optimizer
     model_args["intent_optimizer_lr"] = intent_optimizer_lr
     model_args["entity_optimizer_lr"] = entity_optimizer_lr
-    model_args["tokenize_fn"] = tokenize_fn
+
+    if type(tokenizer) == ElectraTokenizer:
+        model_args["tokenizer"] = tokenizer
 
     # model args
     model_args["num_encoder_layers"] = num_encoder_layers

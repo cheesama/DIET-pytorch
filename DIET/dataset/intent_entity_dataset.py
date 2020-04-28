@@ -28,6 +28,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         unk_token_id=1,
         eos_token_id=2,
         bos_token_id=3,
+        tokenize_fn=None
     ):
         self.intent_dict = {}
         self.entity_dict = {}
@@ -107,10 +108,15 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         # encoder(tokenizer) definition
         self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
+        self.tokenize_fn = tokenize_fn
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
         # bos_token=3, eos_token=2, unk_token=1, pad_token=0
-        tokens = self.encoder.encode(text)
+        if self.tokenize_fn is not None:
+            tokens = self.tokenize_fn(text)
+        else:
+            tokens = self.encoder.encode(text)
+
         bos_tensor = torch.tensor([self.bos_token_id])
         eos_tensor = torch.tensor([self.eos_token_id])
         tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)

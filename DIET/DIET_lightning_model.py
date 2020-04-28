@@ -27,7 +27,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         self.hparams = hparams
 
-        self.dataset = RasaIntentEntityDataset(self.hparams.nlu_data)
+        self.dataset = RasaIntentEntityDataset(markdown_lines=self.hparams.nlu_data, tokenize_fn=self.hparams.tokenize_fn)
 
         self.model = EmbeddingTransformer(
             vocab_size=self.dataset.get_vocab_size(),

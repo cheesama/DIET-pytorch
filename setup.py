@@ -5,7 +5,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="DIET-pytorch",
-    version="0.1",
+    version="0.2",
     description="Dual Intent Entity Transformer based on pytorch-lightning",
     author="Cheesama",
     install_requires=[],

@@ -3,6 +3,8 @@ from .DIET_lightning_model import DualIntentEntityTransformer
 import torch
 import torch.nn as nn
 
+import logging
+
 model = None
 intent_dict = {}
 entity_dict = {}
@@ -20,12 +22,12 @@ class Inferencer:
         for k, v in self.model.dataset.entity_dict.items():
             self.entity_dict[v] = k
 
-        print ('intent dictionary')
-        print (self.intent_dict)
+        logging.info('intent dictionary')
+        logging.info(self.intent_dict)
         print ()
 
-        print ('entity dictionary')
-        print (self.entity_dict)
+        logging.info('entity dictionary')
+        logging.info(self.entity_dict)
 
     def inference(self, text: str, intent_topk=5):
         if self.model is None:

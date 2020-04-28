@@ -1,12 +1,11 @@
 from pytorch_lightning import Trainer
-
+from transformers import ElectraTokenizer
 from argparse import Namespace
 
 from .DIET_lightning_model import DualIntentEntityTransformer
 
 import os, sys
 import torch
-
 
 def train(
     file_path,
@@ -17,7 +16,8 @@ def train(
     intent_optimizer_lr=1e-5,
     entity_optimizer_lr=2e-5,
     checkpoint_path=os.getcwd(),
-    max_epochs=10,
+    max_epochs=20,
+    tokenize_fn=ElectraTokenizer.from_pretrained("monologg/koelectra-small-discriminator").tokenize,
     # model args
     num_encoder_layers=1,
     **kwargs
@@ -38,6 +38,7 @@ def train(
     model_args["optimizer"] = optimizer
     model_args["intent_optimizer_lr"] = intent_optimizer_lr
     model_args["entity_optimizer_lr"] = entity_optimizer_lr
+    model_args["tokenize_fn"] = tokenize_fn
 
     # model args
     model_args["num_encoder_layers"] = num_encoder_layers

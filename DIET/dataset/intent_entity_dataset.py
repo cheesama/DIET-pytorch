@@ -161,6 +161,9 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         return self.entity_dict
 
     def get_vocab_size(self):
+        if self.tokenize_fn is not None:
+            return len(self.tokenize_fn)
+            
         return len(self.encoder.vocab)
 
     def get_seq_len(self):

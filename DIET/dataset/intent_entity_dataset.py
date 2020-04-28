@@ -115,7 +115,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         if self.tokenize_fn is not None:
             tokens = self.tokenize_fn(text)
             if type(tokens) == list:
-                tokens = torch.Tensor(tokens)
+                tokens = torch.tensor(tokens)
 
         else:
             tokens = self.encoder.encode(text)

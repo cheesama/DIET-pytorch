@@ -41,7 +41,7 @@ class EmbeddingTransformer(nn.Module):
         src_key_padding_mask = (x == self.pad_token_id)
         embedding = self.embedding(x)
         embedding += self.position_embedding(
-            torch.arange(self.seq_len).repeat(x.size(0), 1).type_as(embedding)
+            torch.arange(self.seq_len).repeat(x.size(0), 1).type_as(x)
         )
 
         feature = self.encoder(

@@ -18,6 +18,7 @@ def train(
     checkpoint_path=os.getcwd(),
     max_epochs=20,
     tokenize_fn=ElectraTokenizer.from_pretrained("monologg/koelectra-small-discriminator").encode,
+    #tokenize_fn=None,
     # model args
     num_encoder_layers=1,
     **kwargs

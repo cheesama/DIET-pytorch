@@ -71,12 +71,12 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     entity_value_list = []
                     for value in re.finditer(r"\[[^)]*\]", text):
                         entity_value_list.append(
-                            text[value.start() + 1 : value.end() - 1]
+                            text[value.start() + 1 : value.end() - 1].replace('[','').replace(']','')
                         )
 
                     entity_type_list = []
                     for type_str in re.finditer(r"\([^)]*\)", text):
-                        entity_type = text[type_str.start() + 1 : type_str.end() - 1]
+                        entity_type = text[type_str.start() + 1 : type_str.end() - 1].replace('(','').replace(')','')
                         entity_type_list.append(entity_type)
 
                         if entity_type not in self.entity_dict.keys():

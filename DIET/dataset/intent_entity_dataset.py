@@ -153,7 +153,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         entity_idx = np.zeros(self.seq_len)
         for entity_info in self.dataset[idx]["entities"]:
-            for i in range(entity_info["start"], entity_info["end"] + 1):
+            ##Consider [CLS] token
+            for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
                 entity_idx[i] = entity_info["entity_idx"]
         entity_idx = torch.from_numpy(entity_idx)
 

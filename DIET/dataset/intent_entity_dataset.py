@@ -69,7 +69,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     text = line[2:]
 
                     entity_value_list = []
-                    for value in re.finditer(r"(?<=\[).+?(?=\])", text):
+                    for value in re.finditer(r"\[(.*?)\]", text):
                         entity_value_list.append(
                             text[value.start() + 1 : value.end() - 1].replace('[','').replace(']','')
                         )

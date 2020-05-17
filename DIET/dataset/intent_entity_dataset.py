@@ -57,10 +57,9 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                 if "intent:" in line:
                     current_intent_focus = line.split(":")[1].strip()
 
-                    
-                        self.intent_dict[current_intent_focus] = len(
-                            self.intent_dict.keys()
-                        )
+                    self.intent_dict[current_intent_focus] = len(
+                        self.intent_dict.keys()
+                    )
 
                 else:
                     current_intent_focus = ""
@@ -114,8 +113,13 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
                     self.dataset.append(each_data_dict)
 
+        print (f'Intents: {self.intent_dict}')
+        print (f'Entities: {self.entity_dict}')
+
         # encoder(tokenizer) definition
-        self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
+        if tokenizer is None:
+            self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
+
         self.tokenizer = tokenizer
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):

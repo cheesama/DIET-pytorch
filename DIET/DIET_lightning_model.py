@@ -112,7 +112,6 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.model.train()
 
         tokens, intent_idx, entity_idx = batch
-
         intent_pred, entity_pred = self.forward(tokens)
 
         intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
@@ -146,7 +145,6 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.model.eval()
 
         tokens, intent_idx, entity_idx = batch
-
         intent_pred, entity_pred = self.forward(tokens)
 
         intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]

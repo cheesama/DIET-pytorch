@@ -26,8 +26,8 @@ class PerfCallback(Callback):
         if self.file_path is None:
             dataset = pl_module.val_dataset
         else:
-            nlu_data = open(file_path, encoding="utf-8").readlines()
-            dataset = RasaIntentEntityDataset(nlu_data, tokenizer=None)
+            nlu_data = open(self.file_path, encoding="utf-8").readlines()
+            dataset = RasaIntentEntityDataset(nlu_data, tokenizer=pl_module.hparams.tokenizer)
         
         dataloader = DataLoader(dataset, batch_size = 32)
         
@@ -51,9 +51,9 @@ def train(
     **kwargs
 ):
     gpu_num = torch.cuda.device_count()
-
+    
     trainer = Trainer(
-        default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
+        default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num, callbacks=[PerfCallback(file_path = file_path, gpu_num=gpu_num)]
     )
 
     model_args = {}

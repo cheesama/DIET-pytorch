@@ -24,13 +24,12 @@ def show_intent_report(dataset, pl_module, file_name=None, output_dir=None, cuda
     dataloader = DataLoader(dataset, batch_size=32)
     for batch in dataloader:
         inputs, intent_idx, entity_idx = batch
-        (input_ids, token_type_ids) = inputs
-        token = get_token_to_text(tokenizer, input_ids)
+        input_ids = inputs
+        token = get_token_to_text(tokenizer, input_ids.cpu().numpy())
         text.extend(token)
         if cuda > 0:
             input_ids = input_ids.cuda()
-            token_type_ids = token_type_ids.cuda()
-        intent_pred, entity_pred = pl_module.model(input_ids, token_type_ids)
+        intent_pred, entity_pred = pl_module.model(input_ids)
         y_label = intent_pred.argmax(1).cpu().numpy()
         preds = np.append(preds, y_label)
         targets = np.append(targets, intent_idx.cpu().numpy())
@@ -61,11 +60,12 @@ def show_intent_report(dataset, pl_module, file_name=None, output_dir=None, cuda
         tmp_dict['prob'] = round(logits[idx], 3)
         tmp_dict['text'] = text[idx]
         inequal_dict[label_dict[pred]].append(tmp_dict)
-    
+        
+    cm_file_name = file_name.replace('.', '_cm.')
     cm_matrix = confusion_matrix(
-            pred=preds, label=targets, label_index=label_dict, file_name=file_name, output_dir=output_dir)
+            pred=preds, label=targets, label_index=label_dict, file_name=cm_file_name, output_dir=output_dir)
     
-    pred_report(inequal_dict, cm_matrix, file_name=file_name.replace(
+    pred_report(inequal_dict, cm_matrix, file_name=cm_file_name.replace(
             '.json', '.md'),  output_dir=output_dir)
     
 def get_token_to_text(tokenizer, data):

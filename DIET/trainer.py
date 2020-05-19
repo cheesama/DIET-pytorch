@@ -3,9 +3,36 @@ from transformers import ElectraTokenizer
 from argparse import Namespace
 
 from .DIET_lightning_model import DualIntentEntityTransformer
+from .dataset.intent_entity_dataset import RasaIntentEntityDataset
 
 import os, sys
 import torch
+from torch.utils.data import DataLoader
+
+from pytorch_lightning.callbacks.base import Callback
+from DIET.metrics import show_intent_report
+
+
+class PerfCallback(Callback):
+    def __init__(self, file_path=None, gpu_num=0):
+        self.file_path = file_path
+        if gpu_num > 0:
+            self.cuda = True
+        else:
+            self.cuda = False
+
+    def on_train_end(self, trainer, pl_module):
+        print("train finished")
+        if self.file_path is None:
+            dataset = pl_module.val_dataset
+        else:
+            nlu_data = open(file_path, encoding="utf-8").readlines()
+            dataset = RasaIntentEntityDataset(nlu_data, tokenizer=None)
+        
+        dataloader = DataLoader(dataset, batch_size = 32)
+        
+        show_intent_report(dataset, pl_module, file_name="test_metric.json", output_dir="results", cuda=True)
+
 
 def train(
     file_path,

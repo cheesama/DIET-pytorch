@@ -26,8 +26,9 @@ def train(
     num_encoder_layers=1,
     **kwargs
 ):
-    gpu_num = torch.cuda.device_count()
+    gpu_num = min(1, torch.cuda.device_count())
 
+    '''
     if gpu_num > 1:
         trainer = Trainer(
             default_root_dir=checkpoint_path,
@@ -36,9 +37,11 @@ def train(
             distributed_backend="dp",
         )
     else:
-        trainer = Trainer(
-            default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
-        )
+    '''
+
+    trainer = Trainer(
+        default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
+    )
 
     model_args = {}
 

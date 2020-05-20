@@ -46,6 +46,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
             seq_len=self.dataset.get_seq_len(),
             intent_class_num=len(self.dataset.get_intent_idx()),
             entity_class_num=len(self.dataset.get_entity_idx()),
+            d_model=self.hparams.d_model,
             num_encoder_layers=self.hparams.num_encoder_layers,
         )
 

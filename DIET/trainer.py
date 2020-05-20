@@ -23,12 +23,14 @@ def train(
     ),
     # tokenizer=None,
     # model args
-    num_encoder_layers=1,
+    # refer to https://www.notion.so/A-Primer-in-BERTology-What-we-know-about-how-BERT-works-aca45feaba2747f09f1a3cdd1b1bbe16
+    d_model=256,
+    num_encoder_layers=2,
     **kwargs
 ):
     gpu_num = min(1, torch.cuda.device_count())
 
-    '''
+    """
     if gpu_num > 1:
         trainer = Trainer(
             default_root_dir=checkpoint_path,
@@ -37,7 +39,7 @@ def train(
             distributed_backend="dp",
         )
     else:
-    '''
+    """
 
     trainer = Trainer(
         default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
@@ -58,6 +60,7 @@ def train(
         model_args["tokenizer"] = tokenizer
 
     # model args
+    model_args["d_model"] = d_model
     model_args["num_encoder_layers"] = num_encoder_layers
 
     for key, value in kwargs.items():

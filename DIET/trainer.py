@@ -7,6 +7,7 @@ from .DIET_lightning_model import DualIntentEntityTransformer
 import os, sys
 import torch
 
+
 def train(
     file_path,
     # training args
@@ -17,17 +18,27 @@ def train(
     entity_optimizer_lr=2e-5,
     checkpoint_path=os.getcwd(),
     max_epochs=20,
-    tokenizer=ElectraTokenizer.from_pretrained("monologg/koelectra-small-discriminator"),
-    #tokenizer=None,
+    tokenizer=ElectraTokenizer.from_pretrained(
+        "monologg/koelectra-small-discriminator"
+    ),
+    # tokenizer=None,
     # model args
     num_encoder_layers=1,
     **kwargs
 ):
     gpu_num = torch.cuda.device_count()
 
-    trainer = Trainer(
-        default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
-    )
+    if gpu_num > 1:
+        trainer = Trainer(
+            default_root_dir=checkpoint_path,
+            max_epochs=max_epochs,
+            gpus=gpu_num,
+            distributed_backend="dp",
+        )
+    else:
+        trainer = Trainer(
+            default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
+        )
 
     model_args = {}
 

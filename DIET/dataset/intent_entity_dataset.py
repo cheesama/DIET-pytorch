@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from tqdm import tqdm
 from typing import List
+
 from torchnlp.encoders.text import CharacterEncoder
 
 import torch
@@ -120,12 +121,13 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         self.tokenizer = tokenizer
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
-        # bos_token=3, eos_token=2, unk_token=1, pad_token=0
+        # based on KoELECTRA tokenizer, [CLS]=2(bos), [SEP]=3(eos)
         if self.tokenizer is not None:
             tokens = self.tokenizer.encode(text)
             if type(tokens) == list:
                 tokens = torch.tensor(tokens)
 
+        # bos_token=3, eos_token=2, unk_token=1, pad_token=0
         else:
             tokens = self.encoder.encode(text)
 

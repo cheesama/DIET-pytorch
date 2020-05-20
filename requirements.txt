@@ -5,7 +5,7 @@ pycm
 pytorch-lightning
 pytorch-nlp
 sentencepiece
-torch
+torch==1.4
 tqdm>=4.41.0
 
 #models

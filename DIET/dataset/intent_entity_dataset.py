@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from tqdm import tqdm
 from typing import List
+
 from torchnlp.encoders.text import CharacterEncoder
 
 import torch
@@ -57,10 +58,9 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                 if "intent:" in line:
                     current_intent_focus = line.split(":")[1].strip()
 
-                    if current_intent_focus not in self.intent_dict.keys():
-                        self.intent_dict[current_intent_focus] = len(
-                            self.intent_dict.keys()
-                        )
+                    self.intent_dict[current_intent_focus] = len(
+                        self.intent_dict.keys()
+                    )
 
                 else:
                     current_intent_focus = ""
@@ -111,17 +111,23 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
                     self.dataset.append(each_data_dict)
 
+        print (f'Intents: {self.intent_dict}')
+        print (f'Entities: {self.entity_dict}')
+
         # encoder(tokenizer) definition
-        self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
+        if tokenizer is None:
+            self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
+
         self.tokenizer = tokenizer
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
-        # bos_token=3, eos_token=2, unk_token=1, pad_token=0
+        # based on KoELECTRA tokenizer, [CLS]=2(bos), [SEP]=3(eos)
         if self.tokenizer is not None:
             tokens = self.tokenizer.encode(text)
             if type(tokens) == list:
                 tokens = torch.tensor(tokens)
 
+        # bos_token=3, eos_token=2, unk_token=1, pad_token=0
         else:
             tokens = self.encoder.encode(text)
 

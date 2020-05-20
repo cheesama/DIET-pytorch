@@ -6,6 +6,7 @@ pytorch-lightning
 pytorch-nlp
 sentencepiece
 torch
+tqdm>=4.41.0
 
 #models
 transformers==2.8.0

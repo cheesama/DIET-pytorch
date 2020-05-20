@@ -36,7 +36,6 @@ class Inferencer:
             )
 
         tokens = self.model.dataset.tokenize(text)
-
         intent_result, entity_result = self.model.forward(tokens.unsqueeze(0))
 
         # mapping intent result
@@ -66,24 +65,28 @@ class Inferencer:
             if char_idx != 0 and start_idx == -1:
                 start_idx = i
             elif i > 0 and entity_indices[i-1] != entity_indices[i]:
-                end_idx = i - 1
+                end_idx = i
                 entities.append(
                     {
                         "start": max(start_idx,0),
                         "end": end_idx,
-                        "value": text[max(start_idx, 0) : end_idx + 1],
+                        "value": text[max(start_idx, 0) : end_idx],
                         "entity": self.entity_dict[entity_indices[i - 1]],
                     }
                 )
                 start_idx = -1
 
 
-        return {
+        result = {
             "text": text,
             "intent": intent,
             "intent_ranking": intent_ranking,
             "entities": entities,
         }
+
+        print (result)
+
+        return result
 
         # rasa NLU entire result format
         """

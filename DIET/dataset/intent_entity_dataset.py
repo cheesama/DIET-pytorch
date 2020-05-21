@@ -25,14 +25,12 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         self,
         markdown_lines: List[str],
         seq_len=128,
-
-        #torchnlp character tokenizer based special token indices
+        # torchnlp character tokenizer based special token indices
         pad_token_id=0,
         unk_token_id=1,
         eos_token_id=2,
         bos_token_id=3,
-
-        tokenizer=None
+        tokenizer=None,
     ):
         self.intent_dict = {}
         self.entity_dict = {}
@@ -51,19 +49,35 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         intent_value_list = []
         entity_type_list = []
 
-        for line in tqdm(markdown_lines, desc="Organizing Intent & Entity dictionary in NLU markdown file ..."):
-            if len(line.strip()) < 2:
-                continue
-           
-            if "## " in line and "intent:" in line:
-                intent_value_list.append(line.split(":")[1].strip())
-            else:
-                text = line[2:].strip()
+        current_intent_focus = ""
 
-                for type_str in re.finditer(r"\([a-zA-Z_1-2]+\)", text):
-                    entity_type = text[type_str.start() + 1 : type_str.end() - 1].replace('(','').replace(')','')
-                    entity_type_list.append(entity_type)
-            
+        for line in tqdm(
+            markdown_lines,
+            desc="Organizing Intent & Entity dictionary in NLU markdown file ...",
+        ):
+            if len(line.strip()) < 2:
+                current_intent_focus = ""
+                continue
+
+            if "## " in line:
+                if "intent:" in line:
+                    intent_value_list.append(line.split(":")[1].strip())
+                    current_intent_focus = line.split(":")[1].strip()
+                else:
+                    current_intent_focus = ""
+
+            else:
+                if current_intent_focus != "":
+                    text = line[2:].strip()
+
+                    for type_str in re.finditer(r"\([a-zA-Z_1-2]+\)", text):
+                        entity_type = (
+                            text[type_str.start() + 1 : type_str.end() - 1]
+                            .replace("(", "")
+                            .replace(")", "")
+                        )
+                        entity_type_list.append(entity_type)
+
         intent_value_list = sorted(intent_value_list)
         for intent_value in intent_value_list:
             if intent_value not in self.intent_dict.keys():
@@ -80,6 +94,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
             markdown_lines, desc="Extracting Intent & Entity in NLU markdown files...",
         ):
             if len(line.strip()) < 2:
+                current_intent_focus = ""
                 continue
 
             if "## " in line:
@@ -94,12 +109,18 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     entity_value_list = []
                     for value in re.finditer(r"\[(.*?)\]", text):
                         entity_value_list.append(
-                            text[value.start() + 1 : value.end() - 1].replace('[','').replace(']','')
+                            text[value.start() + 1 : value.end() - 1]
+                            .replace("[", "")
+                            .replace("]", "")
                         )
 
                     entity_type_list = []
                     for type_str in re.finditer(r"\([a-zA-Z_1-2]+\)", text):
-                        entity_type = text[type_str.start() + 1 : type_str.end() - 1].replace('(','').replace(')','')
+                        entity_type = (
+                            text[type_str.start() + 1 : type_str.end() - 1]
+                            .replace("(", "")
+                            .replace(")", "")
+                        )
                         entity_type_list.append(entity_type)
 
                     text = re.sub(r"\([a-zA-Z_1-2]+\)", "", text)
@@ -125,14 +146,14 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                                     }
                                 )
                         except Exception as ex:
-                            print (f'error occured : {ex}')
-                            print (f'value: {value}')
-                            print (f'text: {text}')
+                            print(f"error occured : {ex}")
+                            print(f"value: {value}")
+                            print(f"text: {text}")
 
                     self.dataset.append(each_data_dict)
 
-        print (f'Intents: {self.intent_dict}')
-        print (f'Entities: {self.entity_dict}')
+        print(f"Intents: {self.intent_dict}")
+        print(f"Entities: {self.entity_dict}")
 
         # encoder(tokenizer) definition
         if tokenizer is None:
@@ -157,7 +178,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         if padding:
             if len(tokens) > self.seq_len:
-                tokens = tokens[:self.seq_len]
+                tokens = tokens[: self.seq_len]
             else:
                 pad_tensor = torch.tensor(
                     [self.pad_token_id] * (self.seq_len - len(tokens))

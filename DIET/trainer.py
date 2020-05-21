@@ -12,12 +12,12 @@ def train(
     file_path,
     # training args
     train_ratio=0.8,
-    batch_size=32,
+    batch_size=128,
     optimizer="Adam",
-    intent_optimizer_lr=1e-5,
-    entity_optimizer_lr=2e-5,
+    intent_optimizer_lr=1e-4,
+    entity_optimizer_lr=2e-4,
     checkpoint_path=os.getcwd(),
-    max_epochs=20,
+    max_epochs=15,
     tokenizer=ElectraTokenizer.from_pretrained(
         "monologg/koelectra-small-discriminator"
     ),

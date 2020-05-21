@@ -48,6 +48,32 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         self.eos_token_id = eos_token_id
         self.bos_token_id = bos_token_id
 
+        intent_value_list = []
+        entity_type_list = []
+
+        for line in tqdm(markdown_lines, desc="Organizing Intent & Entity dictionary in NLU markdown file ..."):
+            if len(line.strip()) < 2:
+                continue
+           
+            if "## " in line and "intent:" in line:
+                intent_value_list.append(line.split(":")[1].strip())
+            else:
+                text = line[2:].strip()
+
+                for type_str in re.finditer(r"\([a-zA-Z_1-2]+\)", text):
+                    entity_type = text[type_str.start() + 1 : type_str.end() - 1].replace('(','').replace(')','')
+                    entity_type_list.append(entity_type)
+            
+        intent_value_list = sorted(intent_value_list)
+        for intent_value in intent_value_list:
+            if intent_value not in self.intent_dict.keys():
+                self.intent_dict[intent_value] = len(self.intent_dict)
+
+        entity_type_list = sorted(entity_type_list)
+        for entity_type in entity_type_list:
+            if entity_type not in self.entity_dict.keys():
+                self.entity_dict[entity_type] = len(self.entity_dict)
+
         current_intent_focus = ""
 
         for line in tqdm(
@@ -59,11 +85,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
             if "## " in line:
                 if "intent:" in line:
                     current_intent_focus = line.split(":")[1].strip()
-
-                    self.intent_dict[current_intent_focus] = len(
-                        self.intent_dict.keys()
-                    )
-
                 else:
                     current_intent_focus = ""
             else:
@@ -80,9 +101,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     for type_str in re.finditer(r"\([a-zA-Z_1-2]+\)", text):
                         entity_type = text[type_str.start() + 1 : type_str.end() - 1].replace('(','').replace(')','')
                         entity_type_list.append(entity_type)
-
-                        if entity_type not in self.entity_dict.keys():
-                            self.entity_dict[entity_type] = len(self.entity_dict.keys())
 
                     text = re.sub(r"\([a-zA-Z_1-2]+\)", "", text)
                     text = text.replace("[", "").replace("]", "")

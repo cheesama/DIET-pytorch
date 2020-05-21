@@ -28,9 +28,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
         super().__init__()
 
         self.hparams = hparams
-
-        print ('parameters')
-        print (self.hparams)
+        if type(self.hparams) == dict:
+            self.hparams = Namespace(**self.hparams)
 
         if hasattr(self.hparams, "tokenizer") and isinstance(self.hparams.tokenizer, ElectraTokenizer):
             self.dataset = RasaIntentEntityDataset(

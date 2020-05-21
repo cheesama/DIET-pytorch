@@ -29,6 +29,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         self.hparams = hparams
 
+        print ('parameters')
+        print (self.hparams)
+
         if hasattr(self.hparams, "tokenizer") and isinstance(self.hparams.tokenizer, ElectraTokenizer):
             self.dataset = RasaIntentEntityDataset(
                 markdown_lines=self.hparams.nlu_data,

@@ -25,10 +25,13 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         self,
         markdown_lines: List[str],
         seq_len=128,
+
+        #torchnlp character tokenizer based special token indices
         pad_token_id=0,
         unk_token_id=1,
         eos_token_id=2,
         bos_token_id=3,
+
         tokenizer=None
     ):
         self.intent_dict = {}
@@ -40,7 +43,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         self.dataset = []
         self.seq_len = seq_len
 
-        # following torchnlp encoder preset
         self.pad_token_id = pad_token_id
         self.unk_token_id = unk_token_id
         self.eos_token_id = eos_token_id

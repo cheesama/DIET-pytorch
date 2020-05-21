@@ -84,7 +84,7 @@ class Inferencer:
             "entities": entities,
         }
 
-        print (result)
+        #print (result)
 
         return result
 

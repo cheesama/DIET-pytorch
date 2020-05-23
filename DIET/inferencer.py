@@ -1,3 +1,5 @@
+from transformers import ElectraTokenizer
+
 from .DIET_lightning_model import DualIntentEntityTransformer
 
 import torch
@@ -55,26 +57,31 @@ class Inferencer:
 
         # mapping entity result
         entities = []
+        
+        # except first & last sequnce token whcih indicate BOS or [CLS] token & EOS or [SEP] token
+        _, entity_indices = torch.max((entity_result)[0][1:-1,:], dim=1)
 
-        # except first sequnce token whcih indicate BOS token
-        _, entity_indices = torch.max((entity_result)[0][1:,:], dim=1)
-        entity_indices = entity_indices.tolist()[:len(text)]
+        if self.model.dataset.tokenizer is None: #in case of CharacterTokenizer
+            entity_indices = entity_indices.tolist()[:len(text)]
+            start_idx = -1
+            for i, char_idx in enumerate(entity_indices):
+                if char_idx != 0 and start_idx == -1:
+                    start_idx = i
+                elif i > 0 and entity_indices[i-1] != entity_indices[i]:
+                    end_idx = i
+                    entities.append(
+                        {
+                            "start": max(start_idx,0),
+                            "end": end_idx,
+                            "value": text[max(start_idx, 0) : end_idx],
+                            "entity": self.entity_dict[entity_indices[i - 1]],
+                        }
+                    )
+                    start_idx = -1
+        else isinstance(self.model.dataset.tokenizer, ElectraTokenizer):
+            token_indices = entity_indices.tolist()
 
-        start_idx = -1
-        for i, char_idx in enumerate(entity_indices):
-            if char_idx != 0 and start_idx == -1:
-                start_idx = i
-            elif i > 0 and entity_indices[i-1] != entity_indices[i]:
-                end_idx = i
-                entities.append(
-                    {
-                        "start": max(start_idx,0),
-                        "end": end_idx,
-                        "value": text[max(start_idx, 0) : end_idx],
-                        "entity": self.entity_dict[entity_indices[i - 1]],
-                    }
-                )
-                start_idx = -1
+            
 
 
         result = {

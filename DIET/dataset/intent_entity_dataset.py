@@ -2,12 +2,12 @@ from collections import OrderedDict
 from tqdm import tqdm
 from typing import List
 
+from transformers import ElectraTokenizer
 from torchnlp.encoders.text import CharacterEncoder
 
 import torch
 import numpy as np
 import re
-
 
 class RasaIntentEntityDataset(torch.utils.data.Dataset):
     """
@@ -123,8 +123,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                         )
                         entity_type_list.append(entity_type)
 
-                    text = re.sub(r"\([a-zA-Z_1-2]+\)", "", text)
-                    text = text.replace("[", "").replace("]", "")
+                    text = re.sub(r"\([a-zA-Z_1-2]+\)", "", text) #remove (...) str
+                    text = text.replace("[", "").replace("]", "") #remove '[',']' special char
 
                     each_data_dict = {}
                     each_data_dict["text"] = text.strip()
@@ -155,22 +155,22 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         print(f"Intents: {self.intent_dict}")
         print(f"Entities: {self.entity_dict}")
 
-        # encoder(tokenizer) definition
+        #tokenizer definition
         if tokenizer is None:
-            self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
+            self.tokenizer = CharacterEncoder([data["text"] for data in self.dataset])
 
         self.tokenizer = tokenizer
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
         # based on KoELECTRA tokenizer, [CLS]=2(bos), [SEP]=3(eos)
-        if self.tokenizer is not None:
-            tokens = self.tokenizer.encode(text)
+        if isinstance(self.tokenizer, ElectraTokenizer):
+            tokens = self.tokenizer.encode(text) #[[CLS], tokens..., [SEP]]
             if type(tokens) == list:
                 tokens = torch.tensor(tokens)
 
-        # bos_token=3, eos_token=2, unk_token=1, pad_token=0
-        else:
-            tokens = self.encoder.encode(text)
+        # bos_token=3, eos_token=2, unk_token=1, pad_token=0 -> default set in CharacterEncoder
+        elif isinstance(self.tokenizer, CharacterEncoder):
+            tokens = self.tokenizer.encode(text)
 
             bos_tensor = torch.tensor([self.bos_token_id])
             eos_tensor = torch.tensor([self.eos_token_id])
@@ -200,9 +200,14 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         entity_idx = np.zeros(self.seq_len)
         for entity_info in self.dataset[idx]["entities"]:
-            ##Consider [CLS] token
-            for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
-                entity_idx[i] = entity_info["entity_idx"]
+
+            if isinstance(self.tokenizer, CharacterEncoder):
+                ##Consider [CLS](bos) token
+                for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
+                    entity_idx[i] = entity_info["entity_idx"]
+            elif isinstance(self.tokenzer, ElectraTokenizer):
+                #TO-DO: decide how to handle unmatched token & label positions
+
         entity_idx = torch.from_numpy(entity_idx)
 
         return tokens, intent_idx, entity_idx
@@ -214,10 +219,10 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         return self.entity_dict
 
     def get_vocab_size(self):
-        if self.tokenizer is not None:
+        if isinstance(self.tokenizer, ElectraTokenizer):
             return len(self.tokenizer)
-
-        return len(self.encoder.vocab)
+        elif isinstance(self.tokenizer, CharacterEncoder):
+        return len(self.tokenizer.vocab)
 
     def get_seq_len(self):
         return self.seq_len

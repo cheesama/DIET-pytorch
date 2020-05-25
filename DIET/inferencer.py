@@ -1,3 +1,5 @@
+from torchnlp.encoders.text import CharacterEncoder, WhitespaceEncoder
+
 from .DIET_lightning_model import DualIntentEntityTransformer
 
 import torch
@@ -61,8 +63,11 @@ class Inferencer:
 
         # except first & last sequnce token whcih indicate BOS or [CLS] token & EOS or [SEP] token
         _, entity_indices = torch.max((entity_result)[0][1:-1, :], dim=1)
+        start_idx = -1
 
-        if self.model.dataset.tokenizer is None:  # in case of CharacterTokenizer
+        if isinstance(
+            self.model.dataset.tokenizer, CharacterEncoder
+        ):  # in case of CharacterTokenizer
             entity_indices = entity_indices.tolist()[: len(text)]
             start_idx = -1
             for i, char_idx in enumerate(entity_indices):
@@ -79,6 +84,25 @@ class Inferencer:
                         }
                     )
                     start_idx = -1
+
+        elif isinstance(
+            self.model.dataset.tokenizer, WhitespaceEncoder
+        ):  # in case of WhitespaceEncoder
+            for i, token_idx in enumerate(entity_indices):
+                if token_idx != 0:
+                    token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
+                    start_position = text.find(token_value, start_idx)
+
+                    entities.append(
+                        {
+                            "start": start_position,
+                            "end": stsart_position + len(token_value),
+                            "value": token_value,
+                            "entity": self.entity_dict[entity_indices[i - 1]],
+                        }
+                    )
+
+                    start_idx += len(token_value)
 
         result = {
             "text": text,

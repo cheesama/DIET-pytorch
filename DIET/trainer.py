@@ -3,6 +3,11 @@ from argparse import Namespace
 
 from torchnlp.encoders.text import CharacterEncoder, WhitespaceEncoder
 
+# related to pretrained tokenizer & model
+from transformers import ElectraModel, ElectraTokenizer
+from kobert_transformers import get_kobert_model, get_distilkobert_model
+from kobert_transformers import get_tokenizer as kobert_tokenizer
+
 from .DIET_lightning_model import DualIntentEntityTransformer
 
 import os, sys
@@ -21,7 +26,9 @@ def train(
     max_epochs=15,
     tokenizer_type="char",
     # model args
-    # refer to https://www.notion.so/A-Primer-in-BERTology-What-we-know-about-how-BERT-works-aca45feaba2747f09f1a3cdd1b1bbe16
+    # refered below link to optimize model
+    # https://www.notion.so/A-Primer-in-BERTology-What-we-know-about-how-BERT-works-aca45feaba2747f09f1a3cdd1b1bbe16
+    backbone=None,
     d_model=256,
     num_encoder_layers=2,
     **kwargs
@@ -38,6 +45,12 @@ def train(
         )
     else:
     """
+
+    if backbone is not None:
+        if backbone not in ["kobert", "distill_kobert", "koelectra"]:
+            assert ValueError(
+                "backbone shoulud be None or kobert or distill_kobert or koelectra"
+            )
 
     if tokenizer_type not in ["char", "space"]:
         assert ValueError("tokenizer_type should be char or space")
@@ -57,12 +70,26 @@ def train(
     model_args["intent_optimizer_lr"] = intent_optimizer_lr
     model_args["entity_optimizer_lr"] = entity_optimizer_lr
 
-    if tokenizer_type == "char":
-        model_args["tokenizer"] = CharacterEncoder
-    elif tokenizer_type == "space":
-        model_args["tokenizer"] = WhitespaceEncoder
+    if backbone is None:
+        if tokenizer_type == "char":
+            model_args["tokenizer"] = CharacterEncoder
+        elif tokenizer_type == "space":
+            model_args["tokenizer"] = WhitespaceEncoder
+
+        # torchnlp special token indices
+        model_args["tokenizer"].cls_token_id = 3
+        model_args["tokenizer"].sep_token_id = 2
+
+    else:
+        if backbone == "koelectra":  # KoELECTRA-Small
+            model_args["tokenizer"] = ElectraTokenizer.from_pretrained(
+                "monologg/koelectra-small-discriminator"
+            )
+        elif backbone in ["distill_kobert", "kobert"]:
+            model_args["tokenizer"] = kobert_tokenizer()
 
     # model args
+    model_args["backbone"] = backbone
     model_args["d_model"] = d_model
     model_args["num_encoder_layers"] = num_encoder_layers
 

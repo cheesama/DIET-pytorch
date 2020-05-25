@@ -2,6 +2,11 @@ from collections import OrderedDict
 from tqdm import tqdm
 from typing import List
 
+# related to pretrained tokenizer & model
+from transformers import ElectraModel, ElectraTokenizer
+from kobert_transformers import get_kobert_model, get_distilkobert_model
+from kobert_transformers import get_tokenizer as kobert_tokenizer
+
 from torchnlp.encoders.text import CharacterEncoder, WhitespaceEncoder
 
 import torch
@@ -50,6 +55,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         entity_type_list = []
 
         current_intent_focus = ""
+
+        text_list = []
 
         for line in tqdm(
             markdown_lines,
@@ -128,6 +135,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                         "]", ""
                     )  # remove '[',']' special char
 
+                    text_list.append(text)
+
                     each_data_dict = {}
                     each_data_dict["text"] = text.strip()
                     each_data_dict["intent"] = current_intent_focus
@@ -159,7 +168,10 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         print(f"Intents: {self.intent_dict}")
         print(f"Entities: {self.entity_dict}")
 
-        self.tokenizer = tokenizer
+        if type(tokenizer) == kobert_tokenizer or type(tokenizer) == ElectraTokenizer:
+            self.tokenizer = tokenizer
+        else:
+            self.tokenizer = tokenizer(text_list)
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
         # bos_token=3, eos_token=2, unk_token=1, pad_token=0
@@ -198,7 +210,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                 for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
                     entity_idx[i] = entity_info["entity_idx"]
 
-            elif isinstance(self.tokenzer, WhitespaceEncoder):
+            elif isinstance(self.tokenizer, WhitespaceEncoder):
                 ##check whether entity value is include in space splitted per each token
                 for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
                     for token_seq, token_value in enumerate(tokens):
@@ -206,10 +218,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                         if token_seq == 0:
                             continue
 
-                        if entity_info[entity_seq]["value"] in token_value:
-                            entity_idx[token_seq] = entity_info[entity_seq][
-                                "entity_idx"
-                            ]
+                        if entity_info["value"] in self.tokenizer.vocab[token_value.item()]:
+                            entity_idx[token_seq] = entity_info["entity_idx"]
                             break
 
                 for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
@@ -226,7 +236,15 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         return self.entity_dict
 
     def get_vocab_size(self):
-        return len(self.tokenizer.vocab)
+        print(self.tokenizer)
+        print(type(self.tokenizer))
+
+        if isinstance(self.tokenizer, CharacterEncoder) or isinstance(
+            self.tokenizer, WhitespaceEncoder
+        ):
+            return self.tokenizer.vocab_size
+        else:
+            return len(self.tokenizer.vocab)
 
     def get_seq_len(self):
         return self.seq_len

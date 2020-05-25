@@ -1,5 +1,10 @@
 from torch.nn import TransformerEncoder, TransformerEncoderLayer, LayerNorm
 
+# related to pretrained model
+from transformers import ElectraModel, ElectraTokenizer
+from kobert_transformers import get_kobert_model, get_distilkobert_model
+from kobert_transformers import get_tokenizer as kobert_tokenizer
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,6 +13,7 @@ import torch.nn.functional as F
 class EmbeddingTransformer(nn.Module):
     def __init__(
         self,
+        backbone: None,
         vocab_size: int,
         seq_len: int,
         intent_class_num: int,
@@ -25,15 +31,30 @@ class EmbeddingTransformer(nn.Module):
         self.seq_len = seq_len
         self.pad_token_id = pad_token_id
 
+        if backbone is None:
+            self.encoder = nn.TransformerEncoder(
+                TransformerEncoderLayer(
+                    d_model, nhead, dim_feedforward, dropout, activation
+                ),
+                num_encoder_layers,
+                LayerNorm(d_model),
+            )
+        else:  # pre-defined model architecture use
+            if backbone == "kobert":
+                self.encoder = get_kobert_model()
+                d_model = 768
+            elif backbone == "distill_kobert":
+                self.encoder = get_distillkobert_model()
+                d_model = 768
+            elif backbone == "koelectra":
+                self.encoder = ElectraModel.from_pretrained(
+                    "monologg/koelectra-small-discriminator"
+                )
+                d_model = 128
+
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.position_embedding = nn.Embedding(seq_len, d_model)
-        self.encoder = nn.TransformerEncoder(
-            TransformerEncoderLayer(
-                d_model, nhead, dim_feedforward, dropout, activation
-            ),
-            num_encoder_layers,
-            LayerNorm(d_model),
-        )
+
         self.intent_feature = nn.Linear(d_model, intent_class_num)
         self.entity_feature = nn.Linear(d_model, entity_class_num)
 

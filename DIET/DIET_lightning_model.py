@@ -37,6 +37,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
         )
 
         self.model = EmbeddingTransformer(
+            backbone=self.hparams.backbone,
             vocab_size=self.dataset.get_vocab_size(),
             seq_len=self.dataset.get_seq_len(),
             intent_class_num=len(self.dataset.get_intent_idx()),

@@ -11,7 +11,6 @@ model = None
 intent_dict = {}
 entity_dict = {}
 
-
 class Inferencer:
     def __init__(self, checkpoint_path: str):
         self.model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)

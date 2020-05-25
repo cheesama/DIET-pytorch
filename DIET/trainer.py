@@ -1,6 +1,7 @@
 from pytorch_lightning import Trainer
-from transformers import ElectraTokenizer
 from argparse import Namespace
+
+from torchnlp.encoders.text import CharacterEncoder, WhiteSpaceTokenizer
 
 from .DIET_lightning_model import DualIntentEntityTransformer
 
@@ -14,14 +15,11 @@ def train(
     train_ratio=0.8,
     batch_size=128,
     optimizer="Adam",
-    intent_optimizer_lr=1e-4,
-    entity_optimizer_lr=2e-4,
+    intent_optimizer_lr=1e-5,
+    entity_optimizer_lr=2e-5,
     checkpoint_path=os.getcwd(),
     max_epochs=15,
-    tokenizer=ElectraTokenizer.from_pretrained(
-        "monologg/koelectra-small-discriminator"
-    ),
-    # tokenizer=None,
+    tokenizer_type="char",
     # model args
     # refer to https://www.notion.so/A-Primer-in-BERTology-What-we-know-about-how-BERT-works-aca45feaba2747f09f1a3cdd1b1bbe16
     d_model=256,
@@ -41,6 +39,9 @@ def train(
     else:
     """
 
+    if tokenizer_type not in ["char", "space"]:
+        assert ValueError("tokenizer_type should be char or space")
+
     trainer = Trainer(
         default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
     )
@@ -56,8 +57,10 @@ def train(
     model_args["intent_optimizer_lr"] = intent_optimizer_lr
     model_args["entity_optimizer_lr"] = entity_optimizer_lr
 
-    if type(tokenizer) == ElectraTokenizer:
-        model_args["tokenizer"] = tokenizer
+    if tokenizer_type == "char":
+        model_args["tokenizer"] = CharacterEncoder
+    elif tokenizer_type == "space":
+        model_args["tokenizer"] = WhiteSpaceEncoder
 
     # model args
     model_args["d_model"] = d_model

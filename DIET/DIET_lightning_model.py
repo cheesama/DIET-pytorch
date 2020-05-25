@@ -9,8 +9,6 @@ from torchnlp.metrics import get_accuracy, get_token_accuracy
 
 from pytorch_lightning import Trainer
 
-from transformers import ElectraTokenizer
-
 from .dataset.intent_entity_dataset import RasaIntentEntityDataset
 from .model.models import EmbeddingTransformer
 
@@ -31,17 +29,12 @@ class DualIntentEntityTransformer(pl.LightningModule):
         if type(self.hparams) == dict:
             self.hparams = Namespace(**self.hparams)
 
-        if hasattr(self.hparams, "tokenizer") and isinstance(self.hparams.tokenizer, ElectraTokenizer):
-            self.dataset = RasaIntentEntityDataset(
-                markdown_lines=self.hparams.nlu_data,
-                tokenizer=self.hparams.tokenizer,
-                bos_token_id=self.hparams.tokenizer.cls_token_id,
-                eos_token_id=self.hparams.tokenizer.sep_token_id
-            )
-        else:
-            self.dataset = RasaIntentEntityDataset(
-                markdown_lines=self.hparams.nlu_data, tokenizer=None
-            )
+        self.dataset = RasaIntentEntityDataset(
+            markdown_lines=self.hparams.nlu_data,
+            tokenizer=self.hparams.tokenizer,
+            bos_token_id=self.hparams.tokenizer.cls_token_id,
+            eos_token_id=self.hparams.tokenizer.sep_token_id,
+        )
 
         self.model = EmbeddingTransformer(
             vocab_size=self.dataset.get_vocab_size(),

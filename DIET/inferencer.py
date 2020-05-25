@@ -1,5 +1,3 @@
-from transformers import ElectraTokenizer
-
 from .DIET_lightning_model import DualIntentEntityTransformer
 
 import torch
@@ -10,6 +8,7 @@ import logging
 model = None
 intent_dict = {}
 entity_dict = {}
+
 
 class Inferencer:
     def __init__(self, checkpoint_path: str):
@@ -24,11 +23,11 @@ class Inferencer:
         for k, v in self.model.dataset.entity_dict.items():
             self.entity_dict[v] = k
 
-        logging.info('intent dictionary')
+        logging.info("intent dictionary")
         logging.info(self.intent_dict)
-        print ()
+        print()
 
-        logging.info('entity dictionary')
+        logging.info("entity dictionary")
         logging.info(self.entity_dict)
 
     def inference(self, text: str, intent_topk=5):
@@ -49,7 +48,9 @@ class Inferencer:
         for i, (value, index) in enumerate(
             list(zip(rank_values.tolist(), rank_indicies.tolist()))
         ):
-            intent_ranking.append({"confidence": value, "name": self.intent_dict[index]})
+            intent_ranking.append(
+                {"confidence": value, "name": self.intent_dict[index]}
+            )
 
             if i == 0:
                 intent["name"] = self.intent_dict[index]
@@ -57,32 +58,27 @@ class Inferencer:
 
         # mapping entity result
         entities = []
-        
-        # except first & last sequnce token whcih indicate BOS or [CLS] token & EOS or [SEP] token
-        _, entity_indices = torch.max((entity_result)[0][1:-1,:], dim=1)
 
-        if self.model.dataset.tokenizer is None: #in case of CharacterTokenizer
-            entity_indices = entity_indices.tolist()[:len(text)]
+        # except first & last sequnce token whcih indicate BOS or [CLS] token & EOS or [SEP] token
+        _, entity_indices = torch.max((entity_result)[0][1:-1, :], dim=1)
+
+        if self.model.dataset.tokenizer is None:  # in case of CharacterTokenizer
+            entity_indices = entity_indices.tolist()[: len(text)]
             start_idx = -1
             for i, char_idx in enumerate(entity_indices):
                 if char_idx != 0 and start_idx == -1:
                     start_idx = i
-                elif i > 0 and entity_indices[i-1] != entity_indices[i]:
+                elif i > 0 and entity_indices[i - 1] != entity_indices[i]:
                     end_idx = i
                     entities.append(
                         {
-                            "start": max(start_idx,0),
+                            "start": max(start_idx, 0),
                             "end": end_idx,
                             "value": text[max(start_idx, 0) : end_idx],
                             "entity": self.entity_dict[entity_indices[i - 1]],
                         }
                     )
                     start_idx = -1
-        else isinstance(self.model.dataset.tokenizer, ElectraTokenizer):
-            token_indices = entity_indices.tolist()
-
-            
-
 
         result = {
             "text": text,
@@ -91,7 +87,7 @@ class Inferencer:
             "entities": entities,
         }
 
-        #print (result)
+        # print (result)
 
         return result
 

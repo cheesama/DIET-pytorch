@@ -2,12 +2,11 @@ from collections import OrderedDict
 from tqdm import tqdm
 from typing import List
 
-from torchnlp.encoders.text import CharacterEncoder
+from torchnlp.encoders.text import CharacterEncoder, WhiteSpaceEncoder
 
 import torch
 import numpy as np
 import re
-
 
 class RasaIntentEntityDataset(torch.utils.data.Dataset):
     """
@@ -20,17 +19,16 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
     - 인터넷 데이터 [달마다](Every_Month)마다 보내줄 수 있어?    <- utterance with entity
     
     """
-
     def __init__(
         self,
         markdown_lines: List[str],
+        tokenizer,
         seq_len=128,
         # torchnlp character tokenizer based special token indices
         pad_token_id=0,
         unk_token_id=1,
         eos_token_id=2,
         bos_token_id=3,
-        tokenizer=None,
     ):
         self.intent_dict = {}
         self.entity_dict = {}
@@ -144,9 +142,11 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                                         "start": entity.start(),
                                         "end": entity.end(),
                                         "entity": type_str,
+                                        "value": value,
                                         "entity_idx": self.entity_dict[type_str],
                                     }
                                 )
+
                         except Exception as ex:
                             print(f"error occured : {ex}")
                             print(f"value: {value}")
@@ -191,14 +191,23 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         entity_idx = np.zeros(self.seq_len)
         for entity_info in self.dataset[idx]["entities"]:
-
             if isinstance(self.tokenizer, CharacterEncoder):
-                ##Consider [CLS](bos) token
+                #Consider [CLS](bos) token
                 for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
                     entity_idx[i] = entity_info["entity_idx"]
-            elif isinstance(self.tokenzer, WhiteSpaceTokenizer):
-                # TO-DO: decide how to handle unmatched token & label positions
-                ##Consider [CLS](bos) token
+
+            elif isinstance(self.tokenzer, WhiteSpaceEncoder):
+                ##check whether entity value is include in space splitted per each token
+                for entity_seq, entity_info in enumerate(self.dataset[idx]['entities']):
+                    for token_seq, token_value in enumerate(tokens):
+                        #Consider [CLS](bos) token
+                        if token_seq == 0: 
+                            continue
+
+                        if entity_info[entity_seq]['value'] in token_value:
+                            entity_idx[token_seq] = entity_info[entity_seq]['entity_idx']
+                            break
+
                 for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
                     entity_idx[i] = entity_info["entity_idx"]
 

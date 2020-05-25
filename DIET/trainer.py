@@ -1,7 +1,7 @@
 from pytorch_lightning import Trainer
 from argparse import Namespace
 
-from torchnlp.encoders.text import CharacterEncoder, WhiteSpaceTokenizer
+from torchnlp.encoders.text import CharacterEncoder, WhiteSpaceEncoder
 
 from .DIET_lightning_model import DualIntentEntityTransformer
 

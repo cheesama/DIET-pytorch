@@ -1,7 +1,7 @@
 from pytorch_lightning import Trainer
 from argparse import Namespace
 
-from torchnlp.encoders.text import CharacterEncoder, WhiteSpaceEncoder
+from torchnlp.encoders.text import CharacterEncoder, WhitespaceEncoder
 
 from .DIET_lightning_model import DualIntentEntityTransformer
 
@@ -60,7 +60,7 @@ def train(
     if tokenizer_type == "char":
         model_args["tokenizer"] = CharacterEncoder
     elif tokenizer_type == "space":
-        model_args["tokenizer"] = WhiteSpaceEncoder
+        model_args["tokenizer"] = WhitespaceEncoder
 
     # model args
     model_args["d_model"] = d_model

@@ -2,7 +2,7 @@ from collections import OrderedDict
 from tqdm import tqdm
 from typing import List
 
-from torchnlp.encoders.text import CharacterEncoder, WhiteSpaceEncoder
+from torchnlp.encoders.text import CharacterEncoder, WhitespaceEncoder
 
 import torch
 import numpy as np
@@ -196,7 +196,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                 for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
                     entity_idx[i] = entity_info["entity_idx"]
 
-            elif isinstance(self.tokenzer, WhiteSpaceEncoder):
+            elif isinstance(self.tokenzer, WhitespaceEncoder):
                 ##check whether entity value is include in space splitted per each token
                 for entity_seq, entity_info in enumerate(self.dataset[idx]['entities']):
                     for token_seq, token_value in enumerate(tokens):

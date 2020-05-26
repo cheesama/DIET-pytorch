@@ -216,8 +216,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
             elif isinstance(self.tokenizer, WhitespaceEncoder):
                 ##check whether entity value is include in space splitted token
-                for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
-                    for token_seq, token_value in enumerate(tokens):
+                for token_seq, token_value in enumerate(tokens):
+                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
                         # Consider [CLS](bos) token
                         if token_seq == 0:
                             continue

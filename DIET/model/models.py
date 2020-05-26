@@ -86,9 +86,6 @@ class EmbeddingTransformer(nn.Module):
                 feature = feature[0]  # last_hidden_state (N,S,E)
 
             # first token in sequence used to intent classification
-            print (self.seq_len)
-            print (feature[:,0,:].size())
-
             intent_feature = self.intent_feature(feature[:, 0, :])  # (N,E) -> (N,i_C)
 
             # other tokens in sequence used to entity classification

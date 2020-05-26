@@ -11,7 +11,6 @@ model = None
 intent_dict = {}
 entity_dict = {}
 
-
 class Inferencer:
     def __init__(self, checkpoint_path: str):
         self.model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
@@ -85,24 +84,27 @@ class Inferencer:
                     )
                     start_idx = -1
 
-        elif isinstance(
-            self.model.dataset.tokenizer, WhitespaceEncoder
-        ):  # in case of WhitespaceEncoder
+        else:
             for i, token_idx in enumerate(entity_indices):
                 if token_idx != 0:
-                    token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
-                    start_position = text.find(token_value, start_idx)
+                    if isinstance(self.model.dataset.tokenizer, WhitespaceEncoder):  # in case of WhitespaceEncoder
+                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
+                    elif "KoBertTokenizer" in str(type(self.model.dataset.tokenizer)):
+                        token_value = self.model.dataset.tokenizer.idx2token[token_idx]
+                    elif "ElectraTokenizer" in str(type(self.model.dataset.tokenizer)):
+                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens([token_idx])[0]
 
-                    entities.append(
-                        {
-                            "start": start_position,
-                            "end": stsart_position + len(token_value),
-                            "value": token_value,
-                            "entity": self.entity_dict[entity_indices[i - 1]],
-                        }
-                    )
+                    start_position = text.find(token_value)
 
-                    start_idx += len(token_value)
+                    if start_position > 0:
+                        entities.append(
+                            {
+                                "start": start_position,
+                                "end": stsart_position + len(token_value),
+                                "value": token_value,
+                                "entity": self.entity_dict[entity_indices[i - 1]],
+                            }
+                        )
 
         result = {
             "text": text,

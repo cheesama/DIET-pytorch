@@ -77,7 +77,7 @@ class EmbeddingTransformer(nn.Module):
                 feature[:, :, :]
             )  # (S,N,E) -> (S,N,e_C)
 
-            return intent_feature, entity_feature.transpose(1, 0)
+            return intent_feature, entity_feature.transpose(1, 0)[:,1:,:]
         
         elif self.backbone in ["kobert", "distill_kobert", "koelectra"]:
             feature = self.encoder(x, src_key_padding_mask.long())

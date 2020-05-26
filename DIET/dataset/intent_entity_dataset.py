@@ -168,7 +168,9 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         print(f"Intents: {self.intent_dict}")
         print(f"Entities: {self.entity_dict}")
 
-        if type(tokenizer) == kobert_tokenizer or type(tokenizer) == ElectraTokenizer:
+        if "KoBertTokenizer" in str(type(tokenizer)) or "ElectraTokenizer" in str(
+            type(tokenizer)
+        ):
             self.tokenizer = tokenizer
         else:
             self.tokenizer = tokenizer(text_list)
@@ -176,6 +178,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
         # bos_token=3, eos_token=2, unk_token=1, pad_token=0
         tokens = self.tokenizer.encode(text)
+        if type(tokens) == list:
+            tokens = torch.tensor(tokens)
 
         bos_tensor = torch.tensor([self.bos_token_id])
         eos_tensor = torch.tensor([self.eos_token_id])
@@ -211,21 +215,47 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     entity_idx[i] = entity_info["entity_idx"]
 
             elif isinstance(self.tokenizer, WhitespaceEncoder):
-                ##check whether entity value is include in space splitted per each token
+                ##check whether entity value is include in space splitted token
                 for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
                     for token_seq, token_value in enumerate(tokens):
                         # Consider [CLS](bos) token
                         if token_seq == 0:
                             continue
 
-                        if entity_info["value"] in self.tokenizer.vocab[token_value.item()]:
+                        if (
+                            entity_info["value"]
+                            in self.tokenizer.vocab[token_value.item()]
+                        ):
                             entity_idx[token_seq] = entity_info["entity_idx"]
                             break
 
-                for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
-                    entity_idx[i] = entity_info["entity_idx"]
+            elif "KoBertTokenizer" in str(type(self.tokenizer)):
+                ##check whether entity value is include in splitted token
+                for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
+                    for token_seq, token_value in enumerate(tokens):
+                        # Consider [CLS](bos) token
+                        if token_seq == 0:
+                            continue
 
-        entity_idx = torch.from_numpy(entity_idx)
+                        if self.tokenizer.idx2token[token_value.item()] in entity_info['value']:
+                            entity_idx[token_seq] = entity_info["entity_idx"]
+                            break
+
+            elif "ElectraTokenizer" in str(type(self.tokenizer)):
+                ##check whether entity value is include in splitted token
+                for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
+                    for token_seq, token_value in enumerate(tokens):
+                        # Consider [CLS](bos) token
+                        if token_seq == 0:
+                            continue
+
+                        if self.tokenizer.convert_ids_to_tokens([token_value.item()])[0] in entity_info['value']:
+                            entity_idx[token_seq] = entity_info["entity_idx"]
+                            break
+
+
+        # Consider [CLS](bos) token
+        entity_idx = torch.from_numpy(entity_idx)[1:]
 
         return tokens, intent_idx, entity_idx
 
@@ -236,15 +266,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         return self.entity_dict
 
     def get_vocab_size(self):
-        print(self.tokenizer)
-        print(type(self.tokenizer))
-
-        if isinstance(self.tokenizer, CharacterEncoder) or isinstance(
-            self.tokenizer, WhitespaceEncoder
-        ):
-            return self.tokenizer.vocab_size
-        else:
-            return len(self.tokenizer.vocab)
+        return self.tokenizer.vocab_size
 
     def get_seq_len(self):
         return self.seq_len

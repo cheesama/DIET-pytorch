@@ -81,12 +81,12 @@ def train(
         model_args["tokenizer"].sep_token_id = 2
 
     else:
-        if backbone == "koelectra":  # KoELECTRA-Small
+        if backbone in ["kobert", "distill_kobert"]:
+            model_args["tokenizer"] = kobert_tokenizer()
+        elif backbone == "koelectra":
             model_args["tokenizer"] = ElectraTokenizer.from_pretrained(
                 "monologg/koelectra-small-discriminator"
             )
-        elif backbone in ["distill_kobert", "kobert"]:
-            model_args["tokenizer"] = kobert_tokenizer()
 
     # model args
     model_args["backbone"] = backbone

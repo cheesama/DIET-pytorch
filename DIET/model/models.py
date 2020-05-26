@@ -27,7 +27,7 @@ class EmbeddingTransformer(nn.Module):
         pad_token_id: int = 0,
     ):
         super(EmbeddingTransformer, self).__init__()
-
+        self.backbone = backbone
         self.seq_len = seq_len
         self.pad_token_id = pad_token_id
 
@@ -42,18 +42,17 @@ class EmbeddingTransformer(nn.Module):
         else:  # pre-defined model architecture use
             if backbone == "kobert":
                 self.encoder = get_kobert_model()
-                d_model = 768
             elif backbone == "distill_kobert":
-                self.encoder = get_distillkobert_model()
-                d_model = 768
+                self.encoder = get_distilkobert_model()
             elif backbone == "koelectra":
                 self.encoder = ElectraModel.from_pretrained(
                     "monologg/koelectra-small-discriminator"
                 )
-                d_model = 128
+
+            d_model = self.encoder.config.hidden_size
 
         self.embedding = nn.Embedding(vocab_size, d_model)
-        self.position_embedding = nn.Embedding(seq_len, d_model)
+        self.position_embedding = nn.Embedding(self.seq_len, d_model)
 
         self.intent_feature = nn.Linear(d_model, intent_class_num)
         self.entity_feature = nn.Linear(d_model, entity_class_num)
@@ -65,17 +64,37 @@ class EmbeddingTransformer(nn.Module):
             torch.arange(self.seq_len).repeat(x.size(0), 1).type_as(x)
         )
 
-        feature = self.encoder(
-            embedding.transpose(1, 0), src_key_padding_mask=src_key_padding_mask
-        )  # (N,S,E) -> (S,N,E)
+        if self.backbone is None:
+            feature = self.encoder(
+                embedding.transpose(1, 0), src_key_padding_mask=src_key_padding_mask
+            )  # (N,S,E) -> (S,N,E)
 
-        # [src/tgt/memory]_key_padding_mask should be a ByteTensor where True values are positions
-        # that should be masked with float('-inf') and False values will be unchanged.
+            # first token in sequence used to intent classification
+            intent_feature = self.intent_feature(feature[0, :, :])  # (N,E) -> (N,i_C)
 
-        # first token in sequence used to intent classification
-        intent_feature = self.intent_feature(feature[0, :, :])  # (S,E) -> (S,i_C)
+            # other tokens in sequence used to entity classification
+            entity_feature = self.entity_feature(
+                feature[:, :, :]
+            )  # (S,N,E) -> (S,N,e_C)
 
-        # other tokens in sequence used to entity classification
-        entity_feature = self.entity_feature(feature[:, :, :])  # (S,N,E) -> (S,N,e_C)
+            return intent_feature, entity_feature.transpose(1, 0)
+        
+        elif self.backbone in ["kobert", "distill_kobert", "koelectra"]:
+            feature = self.encoder(x, src_key_padding_mask.long())
 
-        return intent_feature, entity_feature.transpose(1, 0)
+            if type(feature) == tuple:
+                feature = feature[0]  # last_hidden_state (N,S,E)
+
+            # first token in sequence used to intent classification
+            print (self.seq_len)
+            print (feature[:,0,:].size())
+
+            intent_feature = self.intent_feature(feature[:, 0, :])  # (N,E) -> (N,i_C)
+
+            # other tokens in sequence used to entity classification
+            entity_feature = self.entity_feature(
+                feature[:, 1:, :]
+            )  # (N,S,E) -> (S,N,e_C)
+
+            return intent_feature, entity_feature
+

@@ -13,7 +13,6 @@ import torch
 import numpy as np
 import re
 
-
 class RasaIntentEntityDataset(torch.utils.data.Dataset):
     """
     RASA NLU markdown file lines based Custom Dataset Class
@@ -208,6 +207,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         intent_idx = torch.tensor([self.dataset[idx]["intent_idx"]])
 
         entity_idx = np.zeros(self.seq_len)
+
         for entity_info in self.dataset[idx]["entities"]:
             if isinstance(self.tokenizer, CharacterEncoder):
                 # Consider [CLS](bos) token
@@ -217,11 +217,11 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
             elif isinstance(self.tokenizer, WhitespaceEncoder):
                 ##check whether entity value is include in space splitted token
                 for token_seq, token_value in enumerate(tokens):
-                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
-                        # Consider [CLS](bos) token
-                        if token_seq == 0:
-                            continue
+                    # Consider [CLS](bos) token
+                    if token_seq == 0:
+                        continue
 
+                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
                         if (
                             entity_info["value"]
                             in self.tokenizer.vocab[token_value.item()]
@@ -231,24 +231,24 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
             elif "KoBertTokenizer" in str(type(self.tokenizer)):
                 ##check whether entity value is include in splitted token
-                for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
-                    for token_seq, token_value in enumerate(tokens):
-                        # Consider [CLS](bos) token
-                        if token_seq == 0:
-                            continue
+                for token_seq, token_value in enumerate(tokens):
+                    # Consider [CLS](bos) token
+                    if token_seq == 0:
+                        continue
 
+                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
                         if self.tokenizer.idx2token[token_value.item()] in entity_info['value']:
                             entity_idx[token_seq] = entity_info["entity_idx"]
                             break
 
             elif "ElectraTokenizer" in str(type(self.tokenizer)):
                 ##check whether entity value is include in splitted token
-                for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
-                    for token_seq, token_value in enumerate(tokens):
-                        # Consider [CLS](bos) token
-                        if token_seq == 0:
-                            continue
+                for token_seq, token_value in enumerate(tokens):
+                    # Consider [CLS](bos) token
+                    if token_seq == 0:
+                        continue
 
+                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
                         if self.tokenizer.convert_ids_to_tokens([token_value.item()])[0] in entity_info['value']:
                             entity_idx[token_seq] = entity_info["entity_idx"]
                             break

@@ -32,8 +32,6 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.dataset = RasaIntentEntityDataset(
             markdown_lines=self.hparams.nlu_data,
             tokenizer=self.hparams.tokenizer,
-            bos_token_id=self.hparams.tokenizer.cls_token_id,
-            eos_token_id=self.hparams.tokenizer.sep_token_id,
         )
 
         self.model = EmbeddingTransformer(
@@ -51,7 +49,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.optimizer = self.hparams.optimizer
         self.intent_optimizer_lr = self.hparams.intent_optimizer_lr
         self.entity_optimizer_lr = self.hparams.entity_optimizer_lr
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.loss_fn = nn.CrossEntropyLoss(ignore_index=self.dataset.pad_token_id)
 
     def forward(self, x):
         return self.model(x)
@@ -103,11 +101,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         intent_pred, entity_pred = self.forward(tokens)
 
-        intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
+        intent_acc = get_accuracy(intent_idx, intent_pred.max(1)[1])[0]
         entity_acc = get_token_accuracy(
-            entity_idx.cpu(),
-            entity_pred.max(2)[1].cpu(),
-            ignore_index=self.dataset.pad_token_id,
+            entity_idx, entity_pred.max(2)[1], ignore_index=self.dataset.pad_token_id,
         )[0]
 
         tensorboard_logs = {
@@ -123,7 +119,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
                 "log": tensorboard_logs,
             }
         if optimizer_idx == 1:
-            entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long())
+            entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
             tensorboard_logs["train/entity/loss"] = entity_loss
             return {
                 "loss": entity_loss,
@@ -136,18 +132,16 @@ class DualIntentEntityTransformer(pl.LightningModule):
         tokens, intent_idx, entity_idx = batch
         intent_pred, entity_pred = self.forward(tokens)
 
-        intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
+        intent_acc = get_accuracy(intent_idx, intent_pred.max(1)[1])[0]
 
         entity_acc = get_token_accuracy(
-            entity_idx.cpu(),
-            entity_pred.max(2)[1].cpu(),
-            ignore_index=self.dataset.pad_token_id,
+            entity_idx, entity_pred.max(2)[1], ignore_index=self.dataset.pad_token_id,
         )[0]
 
+        print(self.loss_fn)
+
         intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
-        entity_loss = self.loss_fn(
-            entity_pred.transpose(1, 2), entity_idx.long()
-        )  # , ignore_index=0)
+        entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
 
         return {
             "val_intent_acc": torch.Tensor([intent_acc]),

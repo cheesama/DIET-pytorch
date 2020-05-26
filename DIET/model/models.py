@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class EmbeddingTransformer(nn.Module):
     def __init__(
         self,
@@ -79,19 +80,22 @@ class EmbeddingTransformer(nn.Module):
                 feature[:, :, :]
             )  # (S,N,E) -> (S,N,e_C)
 
-            return intent_feature, entity_feature.transpose(1, 0)[:,1:,:]
-        
+            return intent_feature, entity_feature.transpose(1, 0)[:, :, :]
+
         elif self.backbone in ["kobert", "distill_kobert", "koelectra"]:
-            feature = self.encoder(x, src_key_padding_mask.long())
+            feature = self.encoder(x, src_key_padding_mask.float())
 
             if type(feature) == tuple:
                 feature = feature[0]  # last_hidden_state (N,S,E)
 
             # first token in sequence used to intent classification
-            intent_feature = self.intent_feature(self.dropout(feature[:, 0, :]))  # (N,E) -> (N,i_C)
+            intent_feature = self.intent_feature(
+                self.dropout(feature[:, 0, :])
+            )  # (N,E) -> (N,i_C)
 
             # other tokens in sequence used to entity classification
-            entity_feature = self.entity_feature(self.dropout(feature[:, 1:, :]))  # (N,S,E) -> (N,S,e_C)
+            entity_feature = self.entity_feature(
+                self.dropout(feature[:, :, :])
+            )  # (N,S,E) -> (N,S,e_C)
 
             return intent_feature, entity_feature
-

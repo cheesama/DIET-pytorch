@@ -13,7 +13,6 @@ from .DIET_lightning_model import DualIntentEntityTransformer
 import os, sys
 import torch
 
-
 def train(
     file_path,
     # training args
@@ -23,7 +22,7 @@ def train(
     intent_optimizer_lr=1e-5,
     entity_optimizer_lr=2e-5,
     checkpoint_path=os.getcwd(),
-    max_epochs=15,
+    max_epochs=20,
     tokenizer_type="char",
     # model args
     # refered below link to optimize model
@@ -75,10 +74,6 @@ def train(
             model_args["tokenizer"] = CharacterEncoder
         elif tokenizer_type == "space":
             model_args["tokenizer"] = WhitespaceEncoder
-
-        # torchnlp special token indices
-        model_args["tokenizer"].cls_token_id = 3
-        model_args["tokenizer"].sep_token_id = 2
 
     else:
         if backbone in ["kobert", "distill_kobert"]:

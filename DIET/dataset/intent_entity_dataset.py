@@ -30,11 +30,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         markdown_lines: List[str],
         tokenizer,
         seq_len=128,
-        # torchnlp character tokenizer based special token indices
-        pad_token_id=0,
-        unk_token_id=1,
-        eos_token_id=2,
-        bos_token_id=3,
     ):
         self.intent_dict = {}
         self.entity_dict = {}
@@ -44,11 +39,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         self.dataset = []
         self.seq_len = seq_len
-
-        self.pad_token_id = pad_token_id
-        self.unk_token_id = unk_token_id
-        self.eos_token_id = eos_token_id
-        self.bos_token_id = bos_token_id
 
         intent_value_list = []
         entity_type_list = []
@@ -167,22 +157,40 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         print(f"Intents: {self.intent_dict}")
         print(f"Entities: {self.entity_dict}")
 
-        if "KoBertTokenizer" in str(type(tokenizer)) or "ElectraTokenizer" in str(
-            type(tokenizer)
-        ):
+        if "KoBertTokenizer" in str(type(tokenizer)):
             self.tokenizer = tokenizer
+            self.pad_token_id = 1
+            self.unk_token_id = 0
+            self.eos_token_id = 3 #[SEP] token
+            self.bos_token_id = 2 #[CLS] token
+
+        elif "ElectraTokenizer" in str(type(tokenizer)):
+            self.tokenizer = tokenizer
+            self.pad_token_id = 0
+            self.unk_token_id = 1
+            self.eos_token_id = 3 #[SEP] token
+            self.bos_token_id = 2 #[CLS] token
+
         else:
             self.tokenizer = tokenizer(text_list)
+            # torchnlp base special token indices
+            self.pad_token_id = 0
+            self.unk_token_id = 1
+            self.eos_token_id = 2
+            self.bos_token_id = 3
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
-        # bos_token=3, eos_token=2, unk_token=1, pad_token=0
         tokens = self.tokenizer.encode(text)
         if type(tokens) == list:
             tokens = torch.tensor(tokens)
 
-        bos_tensor = torch.tensor([self.bos_token_id])
-        eos_tensor = torch.tensor([self.eos_token_id])
-        tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
+        # kobert_tokenizer & koelectra tokenize append [CLS](2) token to start and [SEP](3) token to end
+        if isinstance(self.tokenizer, CharacterEncoder) or isinstance(
+            self.tokenizer, WhitespaceEncoder
+        ):
+            bos_tensor = torch.tensor([self.bos_token_id])
+            eos_tensor = torch.tensor([self.eos_token_id])
+            tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
 
         if padding:
             if len(tokens) > self.seq_len:
@@ -206,7 +214,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         intent_idx = torch.tensor([self.dataset[idx]["intent_idx"]])
 
-        entity_idx = np.zeros(self.seq_len)
+        entity_idx = np.array(self.seq_len * [self.pad_token_id])
 
         for entity_info in self.dataset[idx]["entities"]:
             if isinstance(self.tokenizer, CharacterEncoder):
@@ -221,7 +229,9 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     if token_seq == 0:
                         continue
 
-                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
+                    for entity_seq, entity_info in enumerate(
+                        self.dataset[idx]["entities"]
+                    ):
                         if (
                             entity_info["value"]
                             in self.tokenizer.vocab[token_value.item()]
@@ -236,8 +246,13 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     if token_seq == 0:
                         continue
 
-                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
-                        if self.tokenizer.idx2token[token_value.item()] in entity_info['value']:
+                    for entity_seq, entity_info in enumerate(
+                        self.dataset[idx]["entities"]
+                    ):
+                        if (
+                            self.tokenizer.idx2token[token_value.item()]
+                            in entity_info["value"]
+                        ):
                             entity_idx[token_seq] = entity_info["entity_idx"]
                             break
 
@@ -248,14 +263,20 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     if token_seq == 0:
                         continue
 
-                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
-                        if self.tokenizer.convert_ids_to_tokens([token_value.item()])[0] in entity_info['value']:
+                    for entity_seq, entity_info in enumerate(
+                        self.dataset[idx]["entities"]
+                    ):
+                        if (
+                            self.tokenizer.convert_ids_to_tokens([token_value.item()])[
+                                0
+                            ]
+                            in entity_info["value"]
+                        ):
                             entity_idx[token_seq] = entity_info["entity_idx"]
                             break
 
-
         # Consider [CLS](bos) token
-        entity_idx = torch.from_numpy(entity_idx)[1:]
+        entity_idx = torch.from_numpy(entity_idx)
 
         return tokens, intent_idx, entity_idx
 

@@ -9,7 +9,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 class EmbeddingTransformer(nn.Module):
     def __init__(
         self,
@@ -42,12 +41,15 @@ class EmbeddingTransformer(nn.Module):
         else:  # pre-defined model architecture use
             if backbone == "kobert":
                 self.encoder = get_kobert_model()
+                self.dropout = nn.Dropout(self.encoder.config.dropout)
             elif backbone == "distill_kobert":
                 self.encoder = get_distilkobert_model()
+                self.dropout = nn.Dropout(self.encoder.config.dropout)
             elif backbone == "koelectra":
                 self.encoder = ElectraModel.from_pretrained(
                     "monologg/koelectra-small-discriminator"
                 )
+                self.dropout = nn.Dropout(self.encoder.config.hidden_dropout_prob)
 
             d_model = self.encoder.config.hidden_size
 
@@ -86,12 +88,10 @@ class EmbeddingTransformer(nn.Module):
                 feature = feature[0]  # last_hidden_state (N,S,E)
 
             # first token in sequence used to intent classification
-            intent_feature = self.intent_feature(feature[:, 0, :])  # (N,E) -> (N,i_C)
+            intent_feature = self.intent_feature(self.dropout(feature[:, 0, :]))  # (N,E) -> (N,i_C)
 
             # other tokens in sequence used to entity classification
-            entity_feature = self.entity_feature(
-                feature[:, 1:, :]
-            )  # (N,S,E) -> (S,N,e_C)
+            entity_feature = self.entity_feature(self.dropout(feature[:, 1:, :]))  # (N,S,E) -> (N,S,e_C)
 
             return intent_feature, entity_feature
 

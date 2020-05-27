@@ -20,7 +20,6 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
-
 class DualIntentEntityTransformer(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
@@ -42,6 +41,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
             entity_class_num=len(self.dataset.get_entity_idx()),
             d_model=self.hparams.d_model,
             num_encoder_layers=self.hparams.num_encoder_layers,
+            pad_token_id=self.dataset.pad_token_id
         )
 
         self.train_ratio = self.hparams.train_ratio
@@ -49,7 +49,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.optimizer = self.hparams.optimizer
         self.intent_optimizer_lr = self.hparams.intent_optimizer_lr
         self.entity_optimizer_lr = self.hparams.entity_optimizer_lr
-        self.loss_fn = nn.CrossEntropyLoss(ignore_index=self.dataset.pad_token_id)
+
+        self.intent_loss_fn = nn.CrossEntropyLoss()
+        self.entity_loss_fn = nn.CrossEntropyLoss(ignore_index=self.dataset.pad_token_id)
 
     def forward(self, x):
         return self.model(x)
@@ -98,7 +100,6 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.model.train()
 
         tokens, intent_idx, entity_idx = batch
-
         intent_pred, entity_pred = self.forward(tokens)
 
         intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
@@ -112,15 +113,18 @@ class DualIntentEntityTransformer(pl.LightningModule):
         }
 
         if optimizer_idx == 0:
-            intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
+            intent_loss = self.intent_loss_fn(intent_pred, intent_idx.squeeze(1))
             tensorboard_logs["train/intent/loss"] = intent_loss
+
             return {
                 "loss": intent_loss,
                 "log": tensorboard_logs,
             }
+
         if optimizer_idx == 1:
-            entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
+            entity_loss = self.entity_loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
             tensorboard_logs["train/entity/loss"] = entity_loss
+
             return {
                 "loss": entity_loss,
                 "log": tensorboard_logs,
@@ -138,10 +142,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
             entity_idx.cpu(), entity_pred.max(2)[1].cpu(), ignore_index=self.dataset.pad_token_id,
         )[0]
 
-        print(self.loss_fn)
-
-        intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
-        entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
+        intent_loss = self.intent_loss_fn(intent_pred, intent_idx.squeeze(1))
+        entity_loss = self.entity_loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
 
         return {
             "val_intent_acc": torch.Tensor([intent_acc]),

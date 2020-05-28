@@ -108,7 +108,7 @@ class Inferencer:
                         entities.append(
                             {
                                 "start": start_position,
-                                "end": stsart_position + len(token_value),
+                                "end": start_position + len(token_value),
                                 "value": token_value,
                                 "entity": self.entity_dict[entity_indices[i - 1]],
                             }

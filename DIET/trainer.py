@@ -39,7 +39,7 @@ def train(
     
 
     if backbone is None:
-        report_nm = "base_transformer_{}_token_report.json".format(tokenizer_type)
+        report_nm = "diet_{}_tokenizer_report.json".format(tokenizer_type)
     else:
         report_nm = "{}_report.json".format(backbone)
     

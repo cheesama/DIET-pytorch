@@ -85,6 +85,7 @@ class Inferencer:
                     start_idx = -1
 
         else:
+            entity_indices = entity_indices.tolist()[: len(text)]
             for i, token_idx in enumerate(entity_indices):
                 if token_idx != 0:
                     if isinstance(

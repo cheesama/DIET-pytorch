@@ -59,10 +59,7 @@ def train(
     model_args["entity_optimizer_lr"] = entity_optimizer_lr
 
     if backbone is None:
-        if tokenizer_type == "char":
-            model_args["tokenizer"] = CharacterEncoder
-        elif tokenizer_type == "space":
-            model_args["tokenizer"] = WhitespaceEncoder
+        model_args["tokenizer"] = tokenizer_type
 
     else:
         if backbone in ["kobert", "distill_kobert"]:

@@ -172,7 +172,11 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
             self.bos_token_id = 2 #[CLS] token
 
         else:
-            self.tokenizer = tokenizer(text_list)
+            if tokenizer == 'char':
+                self.tokenizer = CharacterEncoder(text_list)
+            elif tokenizer == 'space':
+                self.tokenizer = WhitespaceEncoder(text_list)
+
             # torchnlp base special token indices
             self.pad_token_id = 0
             self.unk_token_id = 1

@@ -39,9 +39,9 @@ def train(
     
 
     if backbone is None:
-        report_nm = "base_transformer_{}_tokens.json".format(tokenizer_type)
+        report_nm = "base_transformer_{}_token_report.json".format(tokenizer_type)
     else:
-        report_nm = "{}.json".format(backbone)
+        report_nm = "{}_report.json".format(backbone)
     
     trainer = Trainer(
         default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num, callbacks=[PerfCallback(gpu_num=gpu_num, report_nm=report_nm, root_path=checkpoint_path)]

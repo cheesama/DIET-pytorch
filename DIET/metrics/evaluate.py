@@ -7,9 +7,9 @@ from torch.utils.data import DataLoader
 from electra_diet.postprocessor import NERDecoder
 from .metrics import show_rasa_metrics, confusion_matrix, pred_report
 
-def show_intent_report(dataset, pl_module, file_name=None, output_dir=None, cuda=True):
+def show_intent_report(dataset, pl_module, tokenizer, file_name=None, output_dir=None, cuda=True):
     ##generate rasa performance matrics
-    tokenizer = dataset.tokenizer
+#     tokenizer = dataset.tokenizer
     # text = []
     preds = np.array([])
     targets = np.array([])
@@ -27,7 +27,6 @@ def show_intent_report(dataset, pl_module, file_name=None, output_dir=None, cuda
         # text.extend(token)
         if cuda > 0:
             input_ids = input_ids.cuda()
-            token_type_ids = token_type_ids.cuda()
         intent_pred, entity_pred = pl_module.model.forward(input_ids)
         y_label = intent_pred.argmax(1).cpu().numpy()
         preds = np.append(preds, y_label)

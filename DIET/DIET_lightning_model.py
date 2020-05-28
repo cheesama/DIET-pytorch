@@ -9,8 +9,6 @@ from torchnlp.metrics import get_accuracy, get_token_accuracy
 
 from pytorch_lightning import Trainer
 
-from transformers import ElectraTokenizer
-
 from .dataset.intent_entity_dataset import RasaIntentEntityDataset
 from .model.models import EmbeddingTransformer
 
@@ -22,31 +20,28 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
-
 class DualIntentEntityTransformer(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
 
         self.hparams = hparams
+        if type(self.hparams) == dict:
+            self.hparams = Namespace(**self.hparams)
 
-        if hasattr(self.hparams, "tokenizer") and isinstance(self.hparams.tokenizer, ElectraTokenizer):
-            self.dataset = RasaIntentEntityDataset(
-                markdown_lines=self.hparams.nlu_data,
-                tokenizer=self.hparams.tokenizer,
-                bos_token_id=self.hparams.tokenizer.cls_token_id,
-                eos_token_id=self.hparams.tokenizer.sep_token_id
-            )
-        else:
-            self.dataset = RasaIntentEntityDataset(
-                markdown_lines=self.hparams.nlu_data, tokenizer=None
-            )
+        self.dataset = RasaIntentEntityDataset(
+            markdown_lines=self.hparams.nlu_data,
+            tokenizer=self.hparams.tokenizer,
+        )
 
         self.model = EmbeddingTransformer(
+            backbone=self.hparams.backbone,
             vocab_size=self.dataset.get_vocab_size(),
             seq_len=self.dataset.get_seq_len(),
             intent_class_num=len(self.dataset.get_intent_idx()),
             entity_class_num=len(self.dataset.get_entity_idx()),
+            d_model=self.hparams.d_model,
             num_encoder_layers=self.hparams.num_encoder_layers,
+            pad_token_id=self.dataset.pad_token_id
         )
 
         self.train_ratio = self.hparams.train_ratio
@@ -54,7 +49,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.optimizer = self.hparams.optimizer
         self.intent_optimizer_lr = self.hparams.intent_optimizer_lr
         self.entity_optimizer_lr = self.hparams.entity_optimizer_lr
-        self.loss_fn = nn.CrossEntropyLoss()
+
+        self.intent_loss_fn = nn.CrossEntropyLoss()
+        self.entity_loss_fn = nn.CrossEntropyLoss(ignore_index=self.dataset.pad_token_id)
 
     def forward(self, x):
         return self.model(x)
@@ -125,9 +122,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
 
         intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
         entity_acc = get_token_accuracy(
-            entity_idx.cpu(),
-            entity_pred.max(2)[1].cpu(),
-            ignore_index=self.dataset.pad_token_id,
+            entity_idx.cpu(), entity_pred.max(2)[1].cpu(), ignore_index=self.dataset.pad_token_id,
         )[0]
 
         tensorboard_logs = {
@@ -136,15 +131,18 @@ class DualIntentEntityTransformer(pl.LightningModule):
         }
 
         if optimizer_idx == 0:
-            intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
+            intent_loss = self.intent_loss_fn(intent_pred, intent_idx.squeeze(1))
             tensorboard_logs["train/intent/loss"] = intent_loss
+
             return {
                 "loss": intent_loss,
                 "log": tensorboard_logs,
             }
+
         if optimizer_idx == 1:
-            entity_loss = self.loss_fn(entity_pred.transpose(1, 2), entity_idx.long())
+            entity_loss = self.entity_loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
             tensorboard_logs["train/entity/loss"] = entity_loss
+
             return {
                 "loss": entity_loss,
                 "log": tensorboard_logs,
@@ -157,16 +155,13 @@ class DualIntentEntityTransformer(pl.LightningModule):
         intent_pred, entity_pred = self.forward(tokens)
 
         intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
+
         entity_acc = get_token_accuracy(
-            entity_idx.cpu(),
-            entity_pred.max(2)[1].cpu(),
-            ignore_index=self.dataset.pad_token_id,
+            entity_idx.cpu(), entity_pred.max(2)[1].cpu(), ignore_index=self.dataset.pad_token_id,
         )[0]
 
-        intent_loss = self.loss_fn(intent_pred, intent_idx.squeeze(1))
-        entity_loss = self.loss_fn(
-            entity_pred.transpose(1, 2), entity_idx.long()
-        )  # , ignore_index=0)
+        intent_loss = self.intent_loss_fn(intent_pred, intent_idx.squeeze(1))
+        entity_loss = self.entity_loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
 
         return {
             "val_intent_acc": torch.Tensor([intent_acc]),

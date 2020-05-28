@@ -1,6 +1,12 @@
 from pytorch_lightning import Trainer
-from transformers import ElectraTokenizer
 from argparse import Namespace
+
+from torchnlp.encoders.text import CharacterEncoder, WhitespaceEncoder
+
+# related to pretrained tokenizer & model
+from transformers import ElectraModel, ElectraTokenizer
+from kobert_transformers import get_kobert_model, get_distilkobert_model
+from kobert_transformers import get_tokenizer as kobert_tokenizer
 
 from .DIET_lightning_model import DualIntentEntityTransformer
 from .dataset.intent_entity_dataset import RasaIntentEntityDataset
@@ -38,16 +44,19 @@ def train(
     file_path,
     # training args
     train_ratio=0.8,
-    batch_size=32,
+    batch_size=128,
     optimizer="Adam",
     intent_optimizer_lr=1e-5,
     entity_optimizer_lr=2e-5,
     checkpoint_path=os.getcwd(),
     max_epochs=20,
-    tokenizer=ElectraTokenizer.from_pretrained("monologg/koelectra-small-discriminator"),
-    #tokenizer=None,
+    tokenizer_type="char",
     # model args
-    num_encoder_layers=1,
+    # refered below link to optimize model
+    # https://www.notion.so/A-Primer-in-BERTology-What-we-know-about-how-BERT-works-aca45feaba2747f09f1a3cdd1b1bbe16
+    backbone=None,
+    d_model=256,
+    num_encoder_layers=2,
     **kwargs
 ):
     gpu_num = torch.cuda.device_count()
@@ -67,10 +76,23 @@ def train(
     model_args["intent_optimizer_lr"] = intent_optimizer_lr
     model_args["entity_optimizer_lr"] = entity_optimizer_lr
 
-    if type(tokenizer) == ElectraTokenizer:
-        model_args["tokenizer"] = tokenizer
+    if backbone is None:
+        if tokenizer_type == "char":
+            model_args["tokenizer"] = CharacterEncoder
+        elif tokenizer_type == "space":
+            model_args["tokenizer"] = WhitespaceEncoder
+
+    else:
+        if backbone in ["kobert", "distill_kobert"]:
+            model_args["tokenizer"] = kobert_tokenizer()
+        elif backbone == "koelectra":
+            model_args["tokenizer"] = ElectraTokenizer.from_pretrained(
+                "monologg/koelectra-small-discriminator"
+            )
 
     # model args
+    model_args["backbone"] = backbone
+    model_args["d_model"] = d_model
     model_args["num_encoder_layers"] = num_encoder_layers
 
     for key, value in kwargs.items():

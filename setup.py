@@ -8,7 +8,7 @@ setup(
     version="0.2",
     description="Dual Intent Entity Transformer based on pytorch-lightning",
     author="Cheesama",
-    install_requires=[],
+    install_requires=required,
     packages=find_packages(exclude=["docs", "tests", "tmp", "data"]),
     python_requires=">=3",
     zip_safe=False,

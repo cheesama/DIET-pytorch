@@ -2,12 +2,16 @@ from collections import OrderedDict
 from tqdm import tqdm
 from typing import List
 
-from torchnlp.encoders.text import CharacterEncoder
+# related to pretrained tokenizer & model
+from transformers import ElectraModel, ElectraTokenizer
+from kobert_transformers import get_kobert_model, get_distilkobert_model
+from kobert_transformers import get_tokenizer as kobert_tokenizer
+
+from torchnlp.encoders.text import CharacterEncoder, WhitespaceEncoder
 
 import torch
 import numpy as np
 import re
-
 
 class RasaIntentEntityDataset(torch.utils.data.Dataset):
     """
@@ -24,12 +28,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         markdown_lines: List[str],
+        tokenizer,
         seq_len=128,
-        pad_token_id=0,
-        unk_token_id=1,
-        eos_token_id=2,
-        bos_token_id=3,
-        tokenizer=None
     ):
         self.intent_dict = {}
         self.entity_dict = {}
@@ -40,11 +40,49 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         self.dataset = []
         self.seq_len = seq_len
 
-        # following torchnlp encoder preset
-        self.pad_token_id = pad_token_id
-        self.unk_token_id = unk_token_id
-        self.eos_token_id = eos_token_id
-        self.bos_token_id = bos_token_id
+        intent_value_list = []
+        entity_type_list = []
+
+        current_intent_focus = ""
+
+        text_list = []
+
+        for line in tqdm(
+            markdown_lines,
+            desc="Organizing Intent & Entity dictionary in NLU markdown file ...",
+        ):
+            if len(line.strip()) < 2:
+                current_intent_focus = ""
+                continue
+
+            if "## " in line:
+                if "intent:" in line:
+                    intent_value_list.append(line.split(":")[1].strip())
+                    current_intent_focus = line.split(":")[1].strip()
+                else:
+                    current_intent_focus = ""
+
+            else:
+                if current_intent_focus != "":
+                    text = line[2:].strip()
+
+                    for type_str in re.finditer(r"\([a-zA-Z_1-2]+\)", text):
+                        entity_type = (
+                            text[type_str.start() + 1 : type_str.end() - 1]
+                            .replace("(", "")
+                            .replace(")", "")
+                        )
+                        entity_type_list.append(entity_type)
+
+        intent_value_list = sorted(intent_value_list)
+        for intent_value in intent_value_list:
+            if intent_value not in self.intent_dict.keys():
+                self.intent_dict[intent_value] = len(self.intent_dict)
+
+        entity_type_list = sorted(entity_type_list)
+        for entity_type in entity_type_list:
+            if entity_type not in self.entity_dict.keys():
+                self.entity_dict[entity_type] = len(self.entity_dict)
 
         current_intent_focus = ""
 
@@ -52,16 +90,12 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
             markdown_lines, desc="Extracting Intent & Entity in NLU markdown files...",
         ):
             if len(line.strip()) < 2:
+                current_intent_focus = ""
                 continue
 
             if "## " in line:
                 if "intent:" in line:
                     current_intent_focus = line.split(":")[1].strip()
-
-                    self.intent_dict[current_intent_focus] = len(
-                        self.intent_dict.keys()
-                    )
-
                 else:
                     current_intent_focus = ""
             else:
@@ -71,19 +105,26 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     entity_value_list = []
                     for value in re.finditer(r"\[(.*?)\]", text):
                         entity_value_list.append(
-                            text[value.start() + 1 : value.end() - 1].replace('[','').replace(']','')
+                            text[value.start() + 1 : value.end() - 1]
+                            .replace("[", "")
+                            .replace("]", "")
                         )
 
                     entity_type_list = []
                     for type_str in re.finditer(r"\([a-zA-Z_1-2]+\)", text):
-                        entity_type = text[type_str.start() + 1 : type_str.end() - 1].replace('(','').replace(')','')
+                        entity_type = (
+                            text[type_str.start() + 1 : type_str.end() - 1]
+                            .replace("(", "")
+                            .replace(")", "")
+                        )
                         entity_type_list.append(entity_type)
 
-                        if entity_type not in self.entity_dict.keys():
-                            self.entity_dict[entity_type] = len(self.entity_dict.keys())
+                    text = re.sub(r"\([a-zA-Z_1-2]+\)", "", text)  # remove (...) str
+                    text = text.replace("[", "").replace(
+                        "]", ""
+                    )  # remove '[',']' special char
 
-                    text = re.sub(r"\([a-zA-Z_1-2]+\)", "", text)
-                    text = text.replace("[", "").replace("]", "")
+                    text_list.append(text)
 
                     each_data_dict = {}
                     each_data_dict["text"] = text.strip()
@@ -101,43 +142,59 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                                         "start": entity.start(),
                                         "end": entity.end(),
                                         "entity": type_str,
+                                        "value": value,
                                         "entity_idx": self.entity_dict[type_str],
                                     }
                                 )
+
                         except Exception as ex:
-                            print (f'error occured : {ex}')
-                            print (f'value: {value}')
-                            print (f'text: {text}')
+                            print(f"error occured : {ex}")
+                            print(f"value: {value}")
+                            print(f"text: {text}")
 
                     self.dataset.append(each_data_dict)
 
-        print (f'Intents: {self.intent_dict}')
-        print (f'Entities: {self.entity_dict}')
+        print(f"Intents: {self.intent_dict}")
+        print(f"Entities: {self.entity_dict}")
 
-        # encoder(tokenizer) definition
-        if tokenizer is None:
-            self.encoder = CharacterEncoder([data["text"] for data in self.dataset])
+        if "KoBertTokenizer" in str(type(tokenizer)):
+            self.tokenizer = tokenizer
+            self.pad_token_id = 1
+            self.unk_token_id = 0
+            self.eos_token_id = 3 #[SEP] token
+            self.bos_token_id = 2 #[CLS] token
 
-        self.tokenizer = tokenizer
+        elif "ElectraTokenizer" in str(type(tokenizer)):
+            self.tokenizer = tokenizer
+            self.pad_token_id = 0
+            self.unk_token_id = 1
+            self.eos_token_id = 3 #[SEP] token
+            self.bos_token_id = 2 #[CLS] token
+
+        else:
+            self.tokenizer = tokenizer(text_list)
+            # torchnlp base special token indices
+            self.pad_token_id = 0
+            self.unk_token_id = 1
+            self.eos_token_id = 2
+            self.bos_token_id = 3
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
-        # based on KoELECTRA tokenizer, [CLS]=2(bos), [SEP]=3(eos)
-        if self.tokenizer is not None:
-            tokens = self.tokenizer.encode(text)
-            if type(tokens) == list:
-                tokens = torch.tensor(tokens)
+        tokens = self.tokenizer.encode(text)
+        if type(tokens) == list:
+            tokens = torch.tensor(tokens)
 
-        # bos_token=3, eos_token=2, unk_token=1, pad_token=0
-        else:
-            tokens = self.encoder.encode(text)
-
+        # kobert_tokenizer & koelectra tokenize append [CLS](2) token to start and [SEP](3) token to end
+        if isinstance(self.tokenizer, CharacterEncoder) or isinstance(
+            self.tokenizer, WhitespaceEncoder
+        ):
             bos_tensor = torch.tensor([self.bos_token_id])
             eos_tensor = torch.tensor([self.eos_token_id])
             tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
 
         if padding:
             if len(tokens) > self.seq_len:
-                tokens = tokens[:self.seq_len]
+                tokens = tokens[: self.seq_len]
             else:
                 pad_tensor = torch.tensor(
                     [self.pad_token_id] * (self.seq_len - len(tokens))
@@ -157,11 +214,67 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         intent_idx = torch.tensor([self.dataset[idx]["intent_idx"]])
 
-        entity_idx = np.zeros(self.seq_len)
+        entity_idx = np.array(self.seq_len * [self.pad_token_id])
+
         for entity_info in self.dataset[idx]["entities"]:
-            ##Consider [CLS] token
-            for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
-                entity_idx[i] = entity_info["entity_idx"]
+            if isinstance(self.tokenizer, CharacterEncoder):
+                # Consider [CLS](bos) token
+                for i in range(entity_info["start"] + 1, entity_info["end"] + 2):
+                    entity_idx[i] = entity_info["entity_idx"]
+
+            elif isinstance(self.tokenizer, WhitespaceEncoder):
+                ##check whether entity value is include in space splitted token
+                for token_seq, token_value in enumerate(tokens):
+                    # Consider [CLS](bos) token
+                    if token_seq == 0:
+                        continue
+
+                    for entity_seq, entity_info in enumerate(
+                        self.dataset[idx]["entities"]
+                    ):
+                        if (
+                            entity_info["value"]
+                            in self.tokenizer.vocab[token_value.item()]
+                        ):
+                            entity_idx[token_seq] = entity_info["entity_idx"]
+                            break
+
+            elif "KoBertTokenizer" in str(type(self.tokenizer)):
+                ##check whether entity value is include in splitted token
+                for token_seq, token_value in enumerate(tokens):
+                    # Consider [CLS](bos) token
+                    if token_seq == 0:
+                        continue
+
+                    for entity_seq, entity_info in enumerate(
+                        self.dataset[idx]["entities"]
+                    ):
+                        if (
+                            self.tokenizer.idx2token[token_value.item()]
+                            in entity_info["value"]
+                        ):
+                            entity_idx[token_seq] = entity_info["entity_idx"]
+                            break
+
+            elif "ElectraTokenizer" in str(type(self.tokenizer)):
+                ##check whether entity value is include in splitted token
+                for token_seq, token_value in enumerate(tokens):
+                    # Consider [CLS](bos) token
+                    if token_seq == 0:
+                        continue
+
+                    for entity_seq, entity_info in enumerate(
+                        self.dataset[idx]["entities"]
+                    ):
+                        if (
+                            self.tokenizer.convert_ids_to_tokens([token_value.item()])[
+                                0
+                            ]
+                            in entity_info["value"]
+                        ):
+                            entity_idx[token_seq] = entity_info["entity_idx"]
+                            break
+
         entity_idx = torch.from_numpy(entity_idx)
 
         return tokens, intent_idx, entity_idx
@@ -173,10 +286,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         return self.entity_dict
 
     def get_vocab_size(self):
-        if self.tokenizer is not None:
-            return len(self.tokenizer)
-
-        return len(self.encoder.vocab)
+        return self.tokenizer.vocab_size
 
     def get_seq_len(self):
         return self.seq_len

@@ -98,4 +98,8 @@ There are several changes int here.
     Relating upper difference, it doesn't use any pre-trained embedding and tokenizer. So masking techinique is hard to apply.
 
 
+## Reference
 
+- [KoELECTRA](https://github.com/monologg/KoELECTRA)
+- [Kobert Transformers](https://github.com/monologg/KoBERT-Transformers)
+- [Huggingface Transformers](https://github.com/huggingface/transformers)

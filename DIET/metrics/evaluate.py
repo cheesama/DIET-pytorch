@@ -25,9 +25,12 @@ def show_intent_report(dataset, pl_module, tokenizer, file_name=None, output_dir
         # (input_ids, token_type_ids) = inputs
         # token = get_token_to_text(tokenizer, input_ids)
         # text.extend(token)
+        model =  pl_module.model
         if cuda > 0:
             input_ids = input_ids.cuda()
-        intent_pred, entity_pred = pl_module.model.forward(input_ids)
+            model = model.cuda()
+        # intent_pred, entity_pred = pl_module.model.forward(input_ids)
+        intent_pred, entity_pred = model.forward(input_ids)
         y_label = intent_pred.argmax(1).cpu().numpy()
         preds = np.append(preds, y_label)
         targets = np.append(targets, intent_idx.cpu().numpy())

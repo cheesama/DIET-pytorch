@@ -157,14 +157,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         print(f"Intents: {self.intent_dict}")
         print(f"Entities: {self.entity_dict}")
 
-        if "KoBertTokenizer" in str(type(tokenizer)):
-            self.tokenizer = tokenizer
-            self.pad_token_id = 1
-            self.unk_token_id = 0
-            self.eos_token_id = 3 #[SEP] token
-            self.bos_token_id = 2 #[CLS] token
-
-        elif "ElectraTokenizer" in str(type(tokenizer)):
+        if "ElectraTokenizer" in str(type(tokenizer)):
             self.tokenizer = tokenizer
             self.pad_token_id = 0
             self.unk_token_id = 1
@@ -174,14 +167,29 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         else:
             if tokenizer == 'char':
                 self.tokenizer = CharacterEncoder(text_list)
+
+                # torchnlp base special token indices
+                self.pad_token_id = 0
+                self.unk_token_id = 1
+                self.eos_token_id = 2
+                self.bos_token_id = 3
+
             elif tokenizer == 'space':
                 self.tokenizer = WhitespaceEncoder(text_list)
 
-            # torchnlp base special token indices
-            self.pad_token_id = 0
-            self.unk_token_id = 1
-            self.eos_token_id = 2
-            self.bos_token_id = 3
+                # torchnlp base special token indices
+                self.pad_token_id = 0
+                self.unk_token_id = 1
+                self.eos_token_id = 2
+                self.bos_token_id = 3
+
+            elif tokenizer == 'kobert':
+                self.tokenizer = kobert_tokenizer()
+                self.pad_token_id = 1
+                self.unk_token_id = 0
+                self.eos_token_id = 3 #[SEP] token
+                self.bos_token_id = 2 #[CLS] token
+
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
         tokens = self.tokenizer.encode(text)

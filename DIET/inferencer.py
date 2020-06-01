@@ -85,6 +85,7 @@ class Inferencer:
                     start_idx = -1
 
         else:
+            entity_indices = entity_indices.tolist()[: len(text)]
             for i, token_idx in enumerate(entity_indices):
                 if token_idx != 0:
                     if isinstance(
@@ -108,7 +109,7 @@ class Inferencer:
                         entities.append(
                             {
                                 "start": start_position,
-                                "end": stsart_position + len(token_value),
+                                "end": start_position + len(token_value),
                                 "value": token_value,
                                 "entity": self.entity_dict[entity_indices[i - 1]],
                             }

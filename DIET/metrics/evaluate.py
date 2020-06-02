@@ -3,8 +3,6 @@ import numpy as np
 from tqdm import tqdm, trange
 import torch
 from torch.utils.data import DataLoader
-# from electra_diet.metrics import show_rasa_metrics
-from electra_diet.postprocessor import NERDecoder
 from .metrics import show_rasa_metrics, confusion_matrix, pred_report
 
 def show_intent_report(dataset, pl_module, tokenizer, file_name=None, output_dir=None, cuda=True):

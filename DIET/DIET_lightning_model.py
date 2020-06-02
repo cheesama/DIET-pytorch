@@ -51,7 +51,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.entity_optimizer_lr = self.hparams.entity_optimizer_lr
 
         self.intent_loss_fn = nn.CrossEntropyLoss()
-        self.entity_loss_fn = nn.CrossEntropyLoss(ignore_index=self.dataset.pad_token_id)
+        self.entity_loss_fn = nn.CrossEntropyLoss()
 
     def forward(self, x):
         return self.model(x)

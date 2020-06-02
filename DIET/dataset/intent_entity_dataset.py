@@ -193,7 +193,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
-        tokens = self.tokenizer.encode(text)
+        tokens = self.tokenizer.encode(text).long()
         if type(tokens) == list:
             tokens = torch.tensor(tokens).long()
 

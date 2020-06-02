@@ -7,7 +7,6 @@ from .metrics import show_rasa_metrics, confusion_matrix, pred_report
 
 def show_intent_report(dataset, pl_module, tokenizer, file_name=None, output_dir=None, cuda=True):
     ##generate rasa performance matrics
-#     tokenizer = dataset.tokenizer
     # text = []
     preds = np.array([])
     targets = np.array([])
@@ -20,14 +19,10 @@ def show_intent_report(dataset, pl_module, tokenizer, file_name=None, output_dir
 
     for batch in tqdm(dataloader, desc="load intent dataset"):
         input_ids, intent_idx, entity_idx = batch
-        # (input_ids, token_type_ids) = inputs
-        # token = get_token_to_text(tokenizer, input_ids)
-        # text.extend(token)
         model =  pl_module.model
         if cuda > 0:
             input_ids = input_ids.cuda()
             model = model.cuda()
-        # intent_pred, entity_pred = pl_module.model.forward(input_ids)
         intent_pred, entity_pred = model.forward(input_ids)
         y_label = intent_pred.argmax(1).cpu().numpy()
         preds = np.append(preds, y_label)

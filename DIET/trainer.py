@@ -9,9 +9,12 @@ from kobert_transformers import get_kobert_model, get_distilkobert_model
 from kobert_transformers import get_tokenizer as kobert_tokenizer
 
 from .DIET_lightning_model import DualIntentEntityTransformer
+from .dataset.intent_entity_dataset import RasaIntentEntityDataset
 
 import os, sys
 import torch
+from torch.utils.data import DataLoader
+from DIET.eval import PerfCallback
 
 def train(
     file_path,
@@ -32,30 +35,16 @@ def train(
     num_encoder_layers=2,
     **kwargs
 ):
-    gpu_num = min(1, torch.cuda.device_count())
+    gpu_num = torch.cuda.device_count()
+    
 
-    """
-    if gpu_num > 1:
-        trainer = Trainer(
-            default_root_dir=checkpoint_path,
-            max_epochs=max_epochs,
-            gpus=gpu_num,
-            distributed_backend="dp",
-        )
+    if backbone is None:
+        report_nm = "diet_{}_tokenizer_report.json".format(tokenizer_type)
     else:
-    """
-
-    if backbone is not None:
-        if backbone not in ["kobert", "distill_kobert", "koelectra"]:
-            assert ValueError(
-                "backbone shoulud be None or kobert or distill_kobert or koelectra"
-            )
-
-    if tokenizer_type not in ["char", "space"]:
-        assert ValueError("tokenizer_type should be char or space")
-
+        report_nm = "{}_report.json".format(backbone)
+    
     trainer = Trainer(
-        default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num
+        default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num, callbacks=[PerfCallback(gpu_num=gpu_num, report_nm=report_nm, root_path=checkpoint_path)]
     )
 
     model_args = {}

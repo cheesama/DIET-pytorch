@@ -63,6 +63,24 @@ class DualIntentEntityTransformer(pl.LightningModule):
             self.dataset, [train_length, len(self.dataset) - train_length],
         )
 
+        self.hparams.intent_label = self.get_intent_label()
+        self.hparams.entity_label = self.get_entity_label()
+    
+    def get_tokenize(self):
+        return self.dataset.tokenize
+    
+    def get_intent_label(self):
+        self.intent_dict = {}
+        for k, v in self.dataset.intent_dict.items():
+            self.intent_dict[str(v)] = k
+        return self.intent_dict 
+    
+    def get_entity_label(self):
+        self.entity_dict = {}
+        for k, v in self.dataset.entity_dict.items():
+            self.entity_dict[str(v)] = k
+        return self.entity_dict
+
     def train_dataloader(self):
         train_loader = DataLoader(
             self.train_dataset,

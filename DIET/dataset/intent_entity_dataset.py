@@ -124,38 +124,37 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                         "]", ""
                     )  # remove '[',']' special char
 
-                    if len(text)  < 1:
-                        continue
+                    if len(text) > 1:
 
-                    text_list.append(text)
+                        text_list.append(text)
 
-                    each_data_dict = {}
-                    each_data_dict["text"] = text.strip()
-                    each_data_dict["intent"] = current_intent_focus
-                    each_data_dict["intent_idx"] = self.intent_dict[
-                        current_intent_focus
-                    ]
-                    each_data_dict["entities"] = []
+                        each_data_dict = {}
+                        each_data_dict["text"] = text.strip()
+                        each_data_dict["intent"] = current_intent_focus
+                        each_data_dict["intent_idx"] = self.intent_dict[
+                            current_intent_focus
+                        ]
+                        each_data_dict["entities"] = []
 
-                    for value, type_str in zip(entity_value_list, entity_type_list):
-                        try:
-                            for entity in re.finditer(value, text):
-                                each_data_dict["entities"].append(
-                                    {
+                        for value, type_str in zip(entity_value_list, entity_type_list):
+                            try:
+                                for entity in re.finditer(value, text):
+                                    each_data_dict["entities"].append(
+                                        {
                                         "start": entity.start(),
                                         "end": entity.end(),
                                         "entity": type_str,
                                         "value": value,
                                         "entity_idx": self.entity_dict[type_str],
-                                    }
-                                )
+                                        }
+                                    )
 
-                        except Exception as ex:
-                            print(f"error occured : {ex}")
-                            print(f"value: {value}")
-                            print(f"text: {text}")
+                            except Exception as ex:
+                                print(f"error occured : {ex}")
+                                print(f"value: {value}")
+                                print(f"text: {text}")
 
-                    self.dataset.append(each_data_dict)
+                        self.dataset.append(each_data_dict)
 
         print(f"Intents: {self.intent_dict}")
         print(f"Entities: {self.entity_dict}")
@@ -197,7 +196,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
         tokens = self.tokenizer.encode(text)
         if type(tokens) == list:
-            tokens = torch.tensor(tokens)
+            tokens = torch.tensor(tokens).long()
 
         # kobert_tokenizer & koelectra tokenize append [CLS](2) token to start and [SEP](3) token to end
         if isinstance(self.tokenizer, CharacterEncoder) or isinstance(
@@ -207,6 +206,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
             eos_tensor = torch.tensor([self.eos_token_id])
             tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
 
+
         if padding:
             if len(tokens) >= self.seq_len:
                 tokens = tokens[: self.seq_len]
@@ -215,8 +215,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     [self.pad_token_id] * (self.seq_len - len(tokens))
                 )
             
-                print (tokens)
-                print (pad_tensor)
+#                 print (tokens)
+#                 print (pad_tensor)
 
                 tokens = torch.cat((tokens, pad_tensor), 0)
 

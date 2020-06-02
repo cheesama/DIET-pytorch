@@ -208,7 +208,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
             tokens = torch.cat((bos_tensor, tokens, eos_tensor), 0)
 
         if padding:
-            if len(tokens) > self.seq_len:
+            if len(tokens) >= self.seq_len:
                 tokens = tokens[: self.seq_len]
             else:
                 pad_tensor = torch.tensor(

@@ -193,9 +193,11 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
 
     def tokenize(self, text: str, padding: bool = True, return_tensor: bool = True):
-        tokens = self.tokenizer.encode(text).long()
+        tokens = self.tokenizer.encode(text)
         if type(tokens) == list:
             tokens = torch.tensor(tokens).long()
+        else:
+            tokens = tokens.long()
 
         # kobert_tokenizer & koelectra tokenize append [CLS](2) token to start and [SEP](3) token to end
         if isinstance(self.tokenizer, CharacterEncoder) or isinstance(

@@ -124,38 +124,36 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                         "]", ""
                     )  # remove '[',']' special char
 
-                    if len(text)  < 1:
-                        continue
+                    if len(text) > 0:
+                        text_list.append(text)
 
-                    text_list.append(text)
+                        each_data_dict = {}
+                        each_data_dict["text"] = text.strip()
+                        each_data_dict["intent"] = current_intent_focus
+                        each_data_dict["intent_idx"] = self.intent_dict[
+                            current_intent_focus
+                        ]
+                        each_data_dict["entities"] = []
 
-                    each_data_dict = {}
-                    each_data_dict["text"] = text.strip()
-                    each_data_dict["intent"] = current_intent_focus
-                    each_data_dict["intent_idx"] = self.intent_dict[
-                        current_intent_focus
-                    ]
-                    each_data_dict["entities"] = []
+                        for value, type_str in zip(entity_value_list, entity_type_list):
+                            try:
+                                for entity in re.finditer(value, text):
+                                    each_data_dict["entities"].append(
+                                        {
+                                            "start": entity.start(),
+                                            "end": entity.end(),
+                                            "entity": type_str,
+                                            "value": value,
+                                            "entity_idx": self.entity_dict[type_str],
+                                        }
+                                    )
 
-                    for value, type_str in zip(entity_value_list, entity_type_list):
-                        try:
-                            for entity in re.finditer(value, text):
-                                each_data_dict["entities"].append(
-                                    {
-                                        "start": entity.start(),
-                                        "end": entity.end(),
-                                        "entity": type_str,
-                                        "value": value,
-                                        "entity_idx": self.entity_dict[type_str],
-                                    }
-                                )
+                            except Exception as ex:
+                                print(f"error occured : {ex}")
+                                print(f"value: {value}")
+                                print(f"text: {text}")
 
-                        except Exception as ex:
-                            print(f"error occured : {ex}")
-                            print(f"value: {value}")
-                            print(f"text: {text}")
-
-                    self.dataset.append(each_data_dict)
+                        self.dataset.append(each_data_dict)
 
         print(f"Intents: {self.intent_dict}")
         print(f"Entities: {self.entity_dict}")

@@ -124,6 +124,9 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                         "]", ""
                     )  # remove '[',']' special char
 
+                    if len(text)  < 1:
+                        continue
+
                     text_list.append(text)
 
                     each_data_dict = {}
@@ -211,6 +214,10 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                 pad_tensor = torch.tensor(
                     [self.pad_token_id] * (self.seq_len - len(tokens))
                 )
+            
+                print (tokens)
+                print (pad_tensor)
+
                 tokens = torch.cat((tokens, pad_tensor), 0)
 
         if return_tensor:

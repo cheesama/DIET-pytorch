@@ -214,9 +214,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     [self.pad_token_id] * (self.seq_len - len(tokens))
                 )
             
-#                 print (tokens)
-#                 print (pad_tensor)
-
                 tokens = torch.cat((tokens, pad_tensor), 0)
 
         if return_tensor:

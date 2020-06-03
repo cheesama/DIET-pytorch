@@ -62,13 +62,11 @@ def show_entity_report(dataset, pl_module, file_name=None, output_dir=None, cuda
     labels = set()
 
     for batch in tqdm(dataloader, desc="load entity dataset"):
-        inputs, intent_idx, entity_idx, token = batch
-        (input_ids, token_type_ids) = inputs
+        input_ids, intent_idx, entity_idx, token = batch
         text.extend(token)
         if cuda > 0:
             input_ids = input_ids.cuda()
-            token_type_ids = token_type_ids.cuda()
-        _, entity_result = pl_module.model.forward(input_ids, token_type_ids)
+        _, entity_result = pl_module.model.forward(input_ids)
 
         entity_result = entity_result.detach().cpu()
         _, entity_indices = torch.max(entity_result, dim=-1)

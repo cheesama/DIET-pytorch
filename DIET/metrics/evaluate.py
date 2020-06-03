@@ -1,9 +1,11 @@
+from tqdm import tqdm, trange
+from torch.utils.data import DataLoader
+
+from .metrics import show_rasa_metrics, confusion_matrix, pred_report
+
+import torch
 import logging
 import numpy as np
-from tqdm import tqdm, trange
-import torch
-from torch.utils.data import DataLoader
-from .metrics import show_rasa_metrics, confusion_matrix, pred_report
 
 def show_intent_report(dataset, pl_module, tokenizer, file_name=None, output_dir=None, cuda=True):
     ##generate rasa performance matrics
@@ -18,7 +20,8 @@ def show_intent_report(dataset, pl_module, tokenizer, file_name=None, output_dir
     dataloader = DataLoader(dataset, batch_size=32)
 
     for batch in tqdm(dataloader, desc="load intent dataset"):
-        input_ids, intent_idx, entity_idx = batch
+        #dataset follows RasaIntentEntityDataset which defined in this package
+        input_ids, intent_idx, entity_idx, text = batch
         model =  pl_module.model
         if cuda > 0:
             input_ids = input_ids.cuda()

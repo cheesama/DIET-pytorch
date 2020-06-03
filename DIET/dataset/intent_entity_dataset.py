@@ -231,7 +231,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         intent_idx = torch.tensor([self.dataset[idx]["intent_idx"]])
 
-        entity_idx = np.array(self.seq_len * [self.pad_token_id])
+        entity_idx = np.array(self.seq_len * [0]) # O tag indicate 0(zero)
 
         for entity_info in self.dataset[idx]["entities"]:
             if isinstance(self.tokenizer, CharacterEncoder):
@@ -293,6 +293,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                             break
 
         entity_idx = torch.from_numpy(entity_idx)
+
+        print (entity_idx)
 
         return tokens, intent_idx, entity_idx, self.dataset[idx]["text"]
 

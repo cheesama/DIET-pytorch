@@ -11,6 +11,7 @@ model = None
 intent_dict = {}
 entity_dict = {}
 
+
 class Inferencer:
     def __init__(self, checkpoint_path: str):
         self.model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
@@ -37,6 +38,7 @@ class Inferencer:
                 "model is not loaded, first call load_model(checkpoint_path)"
             )
 
+        # encode text to token_indices
         tokens = self.model.dataset.tokenize(text)
         intent_result, entity_result = self.model.forward(tokens.unsqueeze(0))
 
@@ -64,7 +66,9 @@ class Inferencer:
         _, entity_indices = torch.max((entity_result)[0][1:-1, :], dim=1)
         start_idx = -1
 
-        if isinstance(self.model.dataset.tokenizer, CharacterEncoder):  # in case of CharacterTokenizer
+        if isinstance(
+            self.model.dataset.tokenizer, CharacterEncoder
+        ):  # in case of CharacterTokenizer
             entity_indices = entity_indices.tolist()[: len(text)]
             start_idx = -1
             for i, char_idx in enumerate(entity_indices):
@@ -80,31 +84,94 @@ class Inferencer:
                             "entity": self.entity_dict[entity_indices[i - 1]],
                         }
                     )
-                    start_idx = -1
+                    if char_idx == 0:
+                        start_idx = -1
+                    else:
+                        start_idx = i
 
         else:
             entity_indices = entity_indices.tolist()[: len(text)]
-            for i, entity_idx in enumerate(entity_indices):
-                if entity_idx != 0:
-                    token_idx = tokens[i+1] #except first BOS(CLS) token
-                    if isinstance(self.model.dataset.tokenizer, WhitespaceEncoder):  # in case of WhitespaceEncoder
-                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
-                    elif "KoBertTokenizer" in str(type(self.model.dataset.tokenizer)):
-                        token_value = self.model.dataset.tokenizer.idx2token[token_idx]
-                    elif "ElectraTokenizer" in str(type(self.model.dataset.tokenizer)):
-                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens([token_idx])[0]
+            start_token_position = -1
+            for i, entity_idx_value in enumerate(entity_indices):
+                if entity_idx_value != 0 and start_token_position == -1:
+                    start_token_position = i
+                elif i > 0 and entity_indices[i - 1] != entity_indices[i]:
+                    end_token_position = i
+
+                    # except first sequnce token whcih indicate BOS or [CLS] token
+
+                    if type(tokens) == torch.Tensor:
+                        tokens = tokens.long().tolist()
+
+                    # find start text position
+                    token_idx = tokens(start_token_position + 1)
+                    if isinstance(
+                        self.model.dataset.tokenizer, WhitespaceEncoder
+                    ):  # WhitespaceEncoder
+                        token_value = self.model.dataset.tokenizer.index_to_token[
+                            token_idx
+                        ]
+                    elif "KoBertTokenizer" in str(
+                        type(self.model.dataset.tokenizer)
+                    ):  # KoBertTokenizer
+                        token_value = self.model.dataset.tokenizer.idx2token[
+                            token_idx
+                        ].replace("▁", " ")
+                    elif "ElectraTokenizer" in str(
+                        type(self.model.dataset.tokenizer)
+                    ):  # ElectraTokenizer
+                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens(
+                            [token_idx]
+                        )[
+                            0
+                        ].replace(
+                            "#", ""
+                        )
 
                     start_position = text.find(token_value)
 
-                    if start_position > 0:
-                        entities.append(
-                            {
-                                "start": start_position,
-                                "end": start_position + len(token_value),
-                                "value": token_value,
-                                "entity": self.entity_dict[entity_indices[i - 1]],
-                            }
+                    # find end text position
+                    token_idx = tokens(end_token_position + 1)
+                    if isinstance(
+                        self.model.dataset.tokenizer, WhitespaceEncoder
+                    ):  # WhitespaceEncoder
+                        token_value = self.model.dataset.tokenizer.index_to_token[
+                            token_idx
+                        ]
+                    elif "KoBertTokenizer" in str(
+                        type(self.model.dataset.tokenizer)
+                    ):  # KoBertTokenizer
+                        token_value = self.model.dataset.tokenizer.idx2token[
+                            token_idx
+                        ].replace("▁", " ")
+                    elif "ElectraTokenizer" in str(
+                        type(self.model.dataset.tokenizer)
+                    ):  # ElectraTokenizer
+                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens(
+                            [token_idx]
+                        )[
+                            0
+                        ].replace(
+                            "#", ""
                         )
+
+                    end_position = text.find(token_value, start_position) + len(
+                        token_value
+                    )
+
+                    entities.append(
+                        {
+                            "start": start_position,
+                            "end": end_position,
+                            "value": text[start_position:end_position],
+                            "entity": self.entity_dict[entity_idx_value],
+                        }
+                    )
+
+                    if entity_idx_value == 0:
+                        start_token_position = -1
+                    else:
+                        start_token_position = i
 
         result = {
             "text": text,

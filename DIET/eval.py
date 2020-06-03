@@ -1,7 +1,7 @@
 import os
 import glob
 from pytorch_lightning.callbacks.base import Callback
-from DIET.metrics import show_intent_report
+from DIET.metrics import show_intent_report, show_entity_report
 from DIET.dataset.intent_entity_dataset import RasaIntentEntityDataset
 
 class PerfCallback(Callback):

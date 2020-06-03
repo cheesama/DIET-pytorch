@@ -294,8 +294,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
         entity_idx = torch.from_numpy(entity_idx)
 
-        print (entity_idx)
-
         return tokens, intent_idx, entity_idx, self.dataset[idx]["text"]
 
     def get_intent_idx(self):

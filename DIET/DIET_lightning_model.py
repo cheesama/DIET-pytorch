@@ -51,7 +51,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
         self.entity_optimizer_lr = self.hparams.entity_optimizer_lr
 
         self.intent_loss_fn = nn.CrossEntropyLoss()
-        self.entity_loss_fn = nn.CrossEntropyLoss()
+        # reduce O tag class weight to figure out entity imbalance distribution
+        self.entity_loss_fn = nn.CrossEntropyLoss(weight=torch.Tensor([0.1] + [1.0] * (len(self.dataset.get_entity_idx()) - 1)))
 
     def forward(self, x):
         return self.model(x)

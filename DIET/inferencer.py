@@ -18,11 +18,11 @@ class Inferencer:
 
         self.intent_dict = {}
         for k, v in self.model.dataset.intent_dict.items():
-            self.intent_dict[v] = k
+            self.intent_dict[v] = k # str key -> int key
 
         self.entity_dict = {}
         for k, v in self.model.dataset.entity_dict.items():
-            self.entity_dict[v] = k
+            self.entity_dict[v] = k # str key -> int key
 
         logging.info("intent dictionary")
         logging.info(self.intent_dict)
@@ -30,6 +30,10 @@ class Inferencer:
 
         logging.info("entity dictionary")
         logging.info(self.entity_dict)
+
+    def is_same_entity(i, j):
+        # check whether XXX_B, XXX_I tag are same 
+        return self.entity_dict[i][:self.entity_dict[i].rfind('_')] == self.entity_dict[j][:self.entity_dict[j].rfind('_')]
 
     def inference(self, text: str, intent_topk=5):
         if self.model is None:
@@ -73,14 +77,14 @@ class Inferencer:
             for i, char_idx in enumerate(entity_indices):
                 if char_idx != 0 and start_idx == -1:
                     start_idx = i
-                elif i > 0 and entity_indices[i - 1] != entity_indices[i]:
+                elif i > 0 and not self.is_same_entity(i-1, i):
                     end_idx = i
                     entities.append(
                         {
                             "start": max(start_idx, 0),
                             "end": end_idx,
                             "value": text[max(start_idx, 0) : end_idx],
-                            "entity": self.entity_dict[entity_indices[i - 1]],
+                            "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
                         }
                     )
                     if char_idx == 0:
@@ -89,12 +93,12 @@ class Inferencer:
                         start_idx = i
 
         else:
-            entity_indices = entity_indices.tolist()[: len(text)]
+            entity_indices = entity_indices.tolist()[:len(text)]
             start_token_position = -1
             for i, entity_idx_value in enumerate(entity_indices):
                 if entity_idx_value != 0 and start_token_position == -1:
                     start_token_position = i
-                elif i > 0 and entity_indices[i - 1] != entity_indices[i]:
+                elif i > 0 and not self.is_same_entity(i-1,i):
                     end_token_position = i
 
                     # except first sequnce token whcih indicate BOS or [CLS] token
@@ -161,7 +165,7 @@ class Inferencer:
                             "start": start_position,
                             "end": end_position,
                             "value": text[start_position:end_position],
-                            "entity": self.entity_dict[entity_indices[i-1]],
+                            "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
                         }
                     )
 

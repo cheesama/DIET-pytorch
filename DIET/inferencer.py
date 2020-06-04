@@ -38,7 +38,7 @@ class Inferencer:
             )
 
         # encode text to token_indices
-        tokens = self.model.dataset.tokenize(text)
+        tokens = self.model.dataset.encode(text)
         intent_result, entity_result = self.model.forward(tokens.unsqueeze(0))
 
         # mapping intent result

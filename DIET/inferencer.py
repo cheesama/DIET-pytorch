@@ -104,7 +104,7 @@ class Inferencer:
                         tokens = tokens.long().tolist()
 
                     # find start text position
-                    token_idx = tokens(start_token_position + 1)
+                    token_idx = tokens[start_token_position + 1]
                     if isinstance(
                         self.model.dataset.tokenizer, WhitespaceEncoder
                     ):  # WhitespaceEncoder
@@ -131,7 +131,7 @@ class Inferencer:
                     start_position = text.find(token_value)
 
                     # find end text position
-                    token_idx = tokens(end_token_position + 1)
+                    token_idx = tokens[end_token_position + 1]
                     if isinstance(
                         self.model.dataset.tokenizer, WhitespaceEncoder
                     ):  # WhitespaceEncoder

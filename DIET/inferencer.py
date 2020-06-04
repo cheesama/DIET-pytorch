@@ -11,7 +11,6 @@ model = None
 intent_dict = {}
 entity_dict = {}
 
-
 class Inferencer:
     def __init__(self, checkpoint_path: str):
         self.model = DualIntentEntityTransformer.load_from_checkpoint(checkpoint_path)
@@ -128,7 +127,7 @@ class Inferencer:
                             "#", ""
                         )
 
-                    start_position = text.find(token_value)
+                    start_position = text.find(token_value.strip())
 
                     # find end text position
                     token_idx = tokens[end_token_position + 1]
@@ -155,16 +154,14 @@ class Inferencer:
                             "#", ""
                         )
 
-                    end_position = text.find(token_value, start_position) + len(
-                        token_value
-                    )
+                    end_position = text.find(token_value.strip(), start_position) + len(token_value.strip())
 
                     entities.append(
                         {
                             "start": start_position,
                             "end": end_position,
                             "value": text[start_position:end_position],
-                            "entity": self.entity_dict[entity_idx_value],
+                            "entity": self.entity_dict[entity_indices[i-1]],
                         }
                     )
 

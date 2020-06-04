@@ -6,6 +6,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 
 from torchnlp.metrics import get_accuracy, get_token_accuracy
+from sklearn.metrics import balanced_accuracy_score
 
 from pytorch_lightning import Trainer
 
@@ -119,7 +120,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
         intent_pred, entity_pred = self.forward(tokens)
 
         intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
-        entity_acc = get_token_accuracy(entity_idx.cpu(), entity_pred.max(2)[1].cpu())[0]
+        entity_acc = balanced_accuracy_score(entity_idx.cpu().tolist()[0], entity_pred.max(2)[1].cpu().tolist()[0])
 
         tensorboard_logs = {
             "train/intent/acc": intent_acc,
@@ -151,7 +152,7 @@ class DualIntentEntityTransformer(pl.LightningModule):
         intent_pred, entity_pred = self.forward(tokens)
 
         intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
-        entity_acc = get_token_accuracy(entity_idx.cpu(), entity_pred.max(2)[1].cpu())[0]
+        entity_acc = balanced_accuracy_score(entity_idx.cpu().tolist()[0], entity_pred.max(2)[1].cpu().tolist()[0])
 
         intent_loss = self.intent_loss_fn(intent_pred, intent_idx.squeeze(1))
         entity_loss = self.entity_loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)

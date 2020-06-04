@@ -2,9 +2,7 @@ dill
 mdutils
 numpy
 pycm
-pytorch-lightning
-pytorch-nlp
-sentencepiece
+scikit-learn
 torch==1.4
 tqdm>=4.46.0
 
@@ -15,3 +13,8 @@ pytest-remotedata
 #models
 transformers==2.9.1
 kobert-transformers
+pytorch-lightning
+pytorch-nlp
+sentencepiece
+
+

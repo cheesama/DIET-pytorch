@@ -72,17 +72,14 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                         )
                         entity_type_list.append(entity_type)
 
-        intent_value_list = sorted(intent_value_list)
-        for intent_value in intent_value_list:
-            if intent_value not in self.intent_dict.keys():
-                self.intent_dict[intent_value] = len(self.intent_dict)
+                    text = re.sub(r"\([a-zA-Z_1-2]+\)", "", text)  # remove (...) str
+                    text = text.replace("[", "").replace(
+                        "]", ""
+                    )  # remove '[',']' special char
 
-        entity_type_list = sorted(entity_type_list)
-        for entity_type in entity_type_list:
-            if entity_type + '_B' not in self.entity_dict.keys():
-                self.entity_dict[str(entity_type) + '_B'] = len(self.entity_dict)
-            elif entity_type + '_I' not in self.entity_dict.keys():
-                self.entity_dict[str(entity_type) + '_I'] = len(self.entity_dict)
+                    if len(text) > 0:
+                        text_list.append(text.strip())
+
 
         #dataset tokenizer setting
         if "ElectraTokenizer" in str(type(tokenizer)):
@@ -101,7 +98,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                 self.unk_token_id = 1
                 self.eos_token_id = 2
                 self.bos_token_id = 3
-
             elif tokenizer == 'space':
                 self.tokenizer = WhitespaceEncoder(text_list)
 
@@ -110,13 +106,26 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                 self.unk_token_id = 1
                 self.eos_token_id = 2
                 self.bos_token_id = 3
-
             elif tokenizer == 'kobert':
                 self.tokenizer = kobert_tokenizer()
                 self.pad_token_id = 1
                 self.unk_token_id = 0
                 self.eos_token_id = 3 #[SEP] token
                 self.bos_token_id = 2 #[CLS] token
+            else:
+                raise ValueError('not supported tokenizer type')
+
+        intent_value_list = sorted(intent_value_list)
+        for intent_value in intent_value_list:
+            if intent_value not in self.intent_dict.keys():
+                self.intent_dict[intent_value] = len(self.intent_dict)
+
+        entity_type_list = sorted(entity_type_list)
+        for entity_type in entity_type_list:
+            if entity_type + '_B' not in self.entity_dict.keys():
+                self.entity_dict[str(entity_type) + '_B'] = len(self.entity_dict)
+            elif entity_type + '_I' not in self.entity_dict.keys():
+                self.entity_dict[str(entity_type) + '_I'] = len(self.entity_dict)
 
 
         current_intent_focus = ""
@@ -160,8 +169,6 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     )  # remove '[',']' special char
 
                     if len(text) > 0:
-                        text_list.append(text)
-
                         each_data_dict = {}
                         each_data_dict["text"] = text.strip()
                         each_data_dict["intent"] = current_intent_focus
@@ -193,6 +200,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
                         self.dataset.append(each_data_dict)
 
+        
         print(f"Intents: {self.intent_dict}")
         print(f"Entities: {self.entity_dict}")
 
@@ -268,13 +276,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     if token_seq == 0:
                         continue
 
-                    for entity_seq, entity_info in enumerate(
-                        self.dataset[idx]["entities"]
-                    ):
-                        if (
-                            entity_info["value"]
-                            in self.tokenizer.vocab[token_value.item()]
-                        ):
+                    for entity_seq, entity_info in enumerate(self.dataset[idx]["entities"]):
+                        if entity_info["value"] in self.tokenizer.vocab[token_value.item()]:
                             entity_idx[token_seq] = entity_info["entity_idx"]
                             break
 

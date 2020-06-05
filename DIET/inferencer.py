@@ -31,7 +31,7 @@ class Inferencer:
         logging.info("entity dictionary")
         logging.info(self.entity_dict)
 
-    def is_same_entity(i, j):
+    def is_same_entity(self, i, j):
         # check whether XXX_B, XXX_I tag are same 
         return self.entity_dict[i][:self.entity_dict[i].rfind('_')] == self.entity_dict[j][:self.entity_dict[j].rfind('_')]
 

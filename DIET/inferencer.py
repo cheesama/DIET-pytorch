@@ -77,7 +77,7 @@ class Inferencer:
             for i, char_idx in enumerate(entity_indices):
                 if char_idx != 0 and start_idx == -1:
                     start_idx = i
-                elif i > 0 and not self.is_same_entity(i-1, i):
+                elif start_idx >= 0 and not self.is_same_entity(i-1, i):
                     end_idx = i
                     entities.append(
                         {
@@ -95,16 +95,21 @@ class Inferencer:
         else:
             entity_indices = entity_indices.tolist()[:len(text)]
             start_token_position = -1
+
+            # except first sequnce token whcih indicate BOS or [CLS] token
+            if type(tokens) == torch.Tensor:
+                tokens = tokens.long().tolist()
+
+            #print ('tokens')
+            #print (tokens)
+            #print ('predicted entities')
+            #print (entity_indices)
+
             for i, entity_idx_value in enumerate(entity_indices):
                 if entity_idx_value != 0 and start_token_position == -1:
                     start_token_position = i
-                elif i > 0 and not self.is_same_entity(i-1,i):
+                elif start_token_position >= 0 and not self.is_same_entity(i-1,i):
                     end_token_position = i
-
-                    # except first sequnce token whcih indicate BOS or [CLS] token
-
-                    if type(tokens) == torch.Tensor:
-                        tokens = tokens.long().tolist()
 
                     # find start text position
                     token_idx = tokens[start_token_position + 1]

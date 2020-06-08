@@ -33,7 +33,7 @@ class Inferencer:
 
     def is_same_entity(self, i, j):
         # check whether XXX_B, XXX_I tag are same 
-        return self.entity_dict[i][:self.entity_dict[i].rfind('_')] == self.entity_dict[j][:self.entity_dict[j].rfind('_')]
+        return self.entity_dict[i][:self.entity_dict[i].rfind('_')].strip() == self.entity_dict[j][:self.entity_dict[j].rfind('_')].strip()
 
     def inference(self, text: str, intent_topk=5):
         if self.model is None:
@@ -69,6 +69,11 @@ class Inferencer:
         _, entity_indices = torch.max((entity_result)[0][1:-1, :], dim=1)
         start_idx = -1
 
+        #print ('tokens')
+        #print (tokens)
+        #print ('predicted entities')
+        #print (entity_indices)
+
         if isinstance(
             self.model.dataset.tokenizer, CharacterEncoder
         ):  # in case of CharacterTokenizer
@@ -77,16 +82,20 @@ class Inferencer:
             for i, char_idx in enumerate(entity_indices):
                 if char_idx != 0 and start_idx == -1:
                     start_idx = i
-                elif start_idx >= 0 and not self.is_same_entity(i-1, i):
+                #elif start_idx >= 0 and not self.is_same_entity(i-1, i):
+                elif start_idx >= 0 and not self.is_same_entity(entity_indices[i-1], entity_indices[i]):
                     end_idx = i
-                    entities.append(
-                        {
-                            "start": max(start_idx, 0),
-                            "end": end_idx,
-                            "value": text[max(start_idx, 0) : end_idx],
-                            "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
-                        }
-                    )
+
+                    if self.entity_dict[entity_indices[i-1]] != "O": # ignore 'O' tag
+                        entities.append(
+                            {
+                                "start": max(start_idx, 0),
+                                "end": end_idx,
+                                "value": text[max(start_idx, 0) : end_idx],
+                                "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
+                            }
+                        )
+
                     if char_idx == 0:
                         start_idx = -1
                     else:
@@ -100,15 +109,10 @@ class Inferencer:
             if type(tokens) == torch.Tensor:
                 tokens = tokens.long().tolist()
 
-            #print ('tokens')
-            #print (tokens)
-            #print ('predicted entities')
-            #print (entity_indices)
-
             for i, entity_idx_value in enumerate(entity_indices):
                 if entity_idx_value != 0 and start_token_position == -1:
                     start_token_position = i
-                elif start_token_position >= 0 and not self.is_same_entity(i-1,i):
+                elif start_token_position >= 0 and not self.is_same_entity(entity_indices[i-1],entity_indices[i]):
                     end_token_position = i
 
                     # find start text position
@@ -116,25 +120,15 @@ class Inferencer:
                     if isinstance(
                         self.model.dataset.tokenizer, WhitespaceEncoder
                     ):  # WhitespaceEncoder
-                        token_value = self.model.dataset.tokenizer.index_to_token[
-                            token_idx
-                        ]
+                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
                     elif "KoBertTokenizer" in str(
                         type(self.model.dataset.tokenizer)
                     ):  # KoBertTokenizer
-                        token_value = self.model.dataset.tokenizer.idx2token[
-                            token_idx
-                        ].replace("▁", " ")
+                        token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
                     elif "ElectraTokenizer" in str(
                         type(self.model.dataset.tokenizer)
                     ):  # ElectraTokenizer
-                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens(
-                            [token_idx]
-                        )[
-                            0
-                        ].replace(
-                            "#", ""
-                        )
+                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens([token_idx])[0].replace("#", "")
 
                     start_position = text.find(token_value.strip())
 
@@ -165,14 +159,15 @@ class Inferencer:
 
                     end_position = text.find(token_value.strip(), start_position) + len(token_value.strip())
 
-                    entities.append(
-                        {
-                            "start": start_position,
-                            "end": end_position,
-                            "value": text[start_position:end_position],
-                            "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
-                        }
-                    )
+                    if self.entity_dict[entity_indices[i-1]] != "O": # ignore 'O' tag
+                        entities.append(
+                            {
+                                "start": start_position,
+                                "end": end_position,
+                                "value": text[start_position:end_position],
+                                "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
+                            }
+                        )
 
                     if entity_idx_value == 0:
                         start_token_position = -1

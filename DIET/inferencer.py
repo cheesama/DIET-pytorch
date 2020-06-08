@@ -82,7 +82,6 @@ class Inferencer:
             for i, char_idx in enumerate(entity_indices):
                 if char_idx != 0 and start_idx == -1:
                     start_idx = i
-                #elif start_idx >= 0 and not self.is_same_entity(i-1, i):
                 elif start_idx >= 0 and not self.is_same_entity(entity_indices[i-1], entity_indices[i]):
                     end_idx = i
 
@@ -134,18 +133,10 @@ class Inferencer:
 
                     # find end text position
                     token_idx = tokens[end_token_position + 1]
-                    if isinstance(
-                        self.model.dataset.tokenizer, WhitespaceEncoder
-                    ):  # WhitespaceEncoder
-                        token_value = self.model.dataset.tokenizer.index_to_token[
-                            token_idx
-                        ]
-                    elif "KoBertTokenizer" in str(
-                        type(self.model.dataset.tokenizer)
-                    ):  # KoBertTokenizer
-                        token_value = self.model.dataset.tokenizer.idx2token[
-                            token_idx
-                        ].replace("▁", " ")
+                    if isinstance(self.model.dataset.tokenizer, WhitespaceEncoder):  # WhitespaceEncoder
+                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
+                    elif "KoBertTokenizer" in str(type(self.model.dataset.tokenizer)):  # KoBertTokenizer
+                        token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
                     elif "ElectraTokenizer" in str(
                         type(self.model.dataset.tokenizer)
                     ):  # ElectraTokenizer
@@ -168,11 +159,11 @@ class Inferencer:
                                 "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
                             }
                         )
+                        
+                        start_token_position = -1
 
                     if entity_idx_value == 0:
                         start_token_position = -1
-                    else:
-                        start_token_position = i
 
         result = {
             "text": text,

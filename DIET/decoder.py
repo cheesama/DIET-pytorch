@@ -7,14 +7,19 @@ class NERDecoder(object):
     def __init__(self, entity_dict:dict, tokenizer):
         self.entity_dict = entity_dict
         self.tokenizer = tokenizer
+    
+    def is_same_entity(self, i, j):
+        # check whether XXX_B, XXX_I tag are same 
+        return self.entity_dict[i][:self.entity_dict[i].rfind('_')].strip() == self.entity_dict[j][:self.entity_dict[j].rfind('_')].strip()
 
     def process(self, tokens, entity_indices, text):
         # mapping entity result
         entities = []
         start_idx = -1
 
-       if isinstance(
-            self.model.dataset.tokenizer, CharacterEncoder):  # in case of CharacterTokenizer
+        if isinstance(
+            self.tokenizer, CharacterEncoder
+        ):  # in case of CharacterTokenizer
             entity_indices = entity_indices.tolist()[: len(text)]
             start_idx = -1
             for i, char_idx in enumerate(entity_indices):
@@ -55,30 +60,30 @@ class NERDecoder(object):
                     # find start text position
                     token_idx = tokens[start_token_position + 1]
                     if isinstance(
-                        self.model.dataset.tokenizer, WhitespaceEncoder
+                        self.tokenizer, WhitespaceEncoder
                     ):  # WhitespaceEncoder
-                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
+                        token_value = self.tokenizer.index_to_token[token_idx]
                     elif "KoBertTokenizer" in str(
-                        type(self.model.dataset.tokenizer)
+                        type(self.tokenizer)
                     ):  # KoBertTokenizer
-                        token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
+                        token_value = self.tokenizer.idx2token[token_idx].replace("▁", " ")
                     elif "ElectraTokenizer" in str(
-                        type(self.model.dataset.tokenizer)
+                        type(self.tokenizer)
                     ):  # ElectraTokenizer
-                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens([token_idx])[0].replace("#", "")
+                        token_value = self.tokenizer.convert_ids_to_tokens([token_idx])[0].replace("#", "")
 
                     start_position = text.find(token_value.strip())
 
                     # find end text position
                     token_idx = tokens[end_token_position + 1]
-                    if isinstance(self.model.dataset.tokenizer, WhitespaceEncoder):  # WhitespaceEncoder
-                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
-                    elif "KoBertTokenizer" in str(type(self.model.dataset.tokenizer)):  # KoBertTokenizer
-                        token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
+                    if isinstance(self.tokenizer, WhitespaceEncoder):  # WhitespaceEncoder
+                        token_value = self.tokenizer.index_to_token[token_idx]
+                    elif "KoBertTokenizer" in str(type(self.tokenizer)):  # KoBertTokenizer
+                        token_value = self.tokenizer.idx2token[token_idx].replace("▁", " ")
                     elif "ElectraTokenizer" in str(
-                        type(self.model.dataset.tokenizer)
+                        type(self.tokenizer)
                     ):  # ElectraTokenizer
-                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens(
+                        token_value = self.tokenizer.convert_ids_to_tokens(
                             [token_idx]
                         )[
                             0
@@ -105,8 +110,6 @@ class NERDecoder(object):
 
         result = {
             "text": text,
-            "intent": intent,
-            "intent_ranking": intent_ranking,
             "entities": entities,
         }
 
@@ -118,16 +121,7 @@ class NERDecoder(object):
         """
         {
             "text": "Hello!",
-            "intent": {
-                "confidence": 0.6323,
-                "name": "greet"
-            },
-            "intent_ranking": [
-                {
-                    "confidence": 0.6323,
-                    "name": "greet"
-                }
-            ],
+
             "entities": [
                 {
                     "start": 0,
@@ -138,3 +132,4 @@ class NERDecoder(object):
             ]
         }
         """
+

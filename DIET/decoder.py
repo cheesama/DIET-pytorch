@@ -108,28 +108,7 @@ class NERDecoder(object):
                     if entity_idx_value == 0:
                         start_token_position = -1
 
-        result = {
-            "text": text,
-            "entities": entities,
-        }
 
-        # print (result)
+        return entities
 
-        return result
-
-        # rasa NLU entire result format
-        """
-        {
-            "text": "Hello!",
-
-            "entities": [
-                {
-                    "start": 0,
-                    "end": 0,
-                    "value": "string",
-                    "entity": "string"
-                }
-            ]
-        }
-        """
 

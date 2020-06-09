@@ -1,7 +1,7 @@
 from tqdm import tqdm, trange
 from torch.utils.data import DataLoader
 
-from .metrics import show_rasa_metrics, confusion_matrix, pred_report
+from .metrics import show_rasa_metrics, confusion_matrix, pred_report, show_entity_metrics
 from DIET.decoder import NERDecoder  
 import torch
 import logging
@@ -74,8 +74,8 @@ def show_entity_report(dataset, pl_module, file_name=None, output_dir=None, cuda
 
 
         for i in range(entity_idx.shape[0]):
-            decode_original = decoder.process(input_ids[i].cpu().numpy(), entity_idx[i].numpy())
-            decode_pred = decoder.process(input_ids[i].cpu().numpy(), entity_indices[i].numpy())
+            decode_original = decoder.process(input_ids[i].cpu().numpy(), entity_idx[i].numpy(), token[i])
+            decode_pred = decoder.process(input_ids[i].cpu().numpy(), entity_indices[i].numpy(), token[i])
             targets.append(decode_original)
             preds.append(decode_pred)
 

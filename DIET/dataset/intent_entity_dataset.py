@@ -124,9 +124,8 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
         for entity_type in entity_type_list:
             if entity_type + '_B' not in self.entity_dict.keys():
                 self.entity_dict[str(entity_type) + '_B'] = len(self.entity_dict)
-            elif entity_type + '_I' not in self.entity_dict.keys():
+            if entity_type + '_I' not in self.entity_dict.keys():
                 self.entity_dict[str(entity_type) + '_I'] = len(self.entity_dict)
-
 
         current_intent_focus = ""
 

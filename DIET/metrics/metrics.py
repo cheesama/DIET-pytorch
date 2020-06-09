@@ -8,7 +8,7 @@ import json
 import pandas as pd
 from sklearn import metrics
 from pycm import ConfusionMatrix
-# ==================================================
+from typing import List, Dict, Sequence
 from sklearn import metrics
 
 # TODO: Masked output에 대한 메트릭 함수 구현
@@ -186,3 +186,143 @@ def show_rasa_metrics(pred, label, labels=None, target_names=None, output_dir='r
 
     return output
 
+
+class Entity_Matrics:
+    def __init__(self, sents_true_labels: Sequence[Sequence[Dict]], sents_pred_labels:Sequence[Sequence[Dict]]):
+        self.sents_true_labels = sents_true_labels
+        self.sents_pred_labels = sents_pred_labels 
+        self.types = set(entity['entity'] for sent in sents_true_labels for entity in sent)
+        self.confusion_matrices = {type: {'TP': 0, 'TN': 0, 'FP': 0, 'FN': 0} for type in self.types}
+        self.scores = {type: {'p': 0, 'r': 0, 'f1': 0} for type in self.types}
+
+    def cal_confusion_matrices(self) -> Dict[str, Dict]:
+        """Calculate confusion matrices for all sentences."""
+        for true_labels, pred_labels in zip(self.sents_true_labels, self.sents_pred_labels):
+            for true_label in true_labels: 
+                entity_type = true_label['entity']
+                prediction_hit_count = 0 
+                for pred_label in pred_labels:
+                    if pred_label['entity'] != entity_type:
+                        continue
+                    if pred_label['start'] == true_label['start'] and pred_label['end'] == true_label['end'] and pred_label['value'] == true_label['value']: # TP
+                        self.confusion_matrices[entity_type]['TP'] += 1
+                        prediction_hit_count += 1
+                    elif ((pred_label['start'] == true_label['start']) or (pred_label['end'] == true_label['end'])) and pred_label['value'] != true_label['value']: # boundry error, count FN, FP
+                        self.confusion_matrices[entity_type]['FP'] += 1
+                        self.confusion_matrices[entity_type]['FN'] += 1
+                        prediction_hit_count += 1
+                if prediction_hit_count != 1: # FN, model cannot make a prediction for true_label
+                    self.confusion_matrices[entity_type]['FN'] += 1
+                prediction_hit_count = 0 # reset to default
+
+    def cal_scores(self) -> Dict[str, Dict]:
+        """Calculate precision, recall, f1."""
+        confusion_matrices = self.confusion_matrices 
+        scores = {type: {'p': 0, 'r': 0, 'f1': 0} for type in self.types}
+        
+        for entity_type, confusion_matrix in confusion_matrices.items():
+            if confusion_matrix['TP'] == 0 and confusion_matrix['FP'] == 0:
+                scores[entity_type]['p'] = 0
+            else:
+                scores[entity_type]['p'] = confusion_matrix['TP'] / (confusion_matrix['TP'] + confusion_matrix['FP'])
+
+            if confusion_matrix['TP'] == 0 and confusion_matrix['FN'] == 0:
+                scores[entity_type]['r'] = 0
+            else:
+                scores[entity_type]['r'] = confusion_matrix['TP'] / (confusion_matrix['TP'] + confusion_matrix['FN']) 
+
+            if scores[entity_type]['p'] == 0 or scores[entity_type]['r'] == 0:
+                scores[entity_type]['f1'] = 0
+            else:
+                scores[entity_type]['f1'] = 2*scores[entity_type]['p']*scores[entity_type]['r'] / (scores[entity_type]['p']+scores[entity_type]['r'])  
+        self.scores = scores
+
+    def print_confusion_matrices(self):
+        for entity_type, matrix in self.confusion_matrices.items():
+            print(f"{entity_type}: {matrix}")
+
+    def print_scores(self):
+        for entity_type, score in self.scores.items():
+            print(f"{entity_type}: f1 {score['f1']:.4f}, precision {score['p']:.4f}, recall {score['r']:.4f}")
+        
+    def cal_micro_avg(self):
+        sum_TP = 0
+        sum_FP = 0
+        sum_FN = 0
+        support = 0
+        for k, v in self.confusion_matrices.items():
+            sum_TP += v['TP']
+            sum_FP += v['FP']
+            sum_FN += v['FN']
+            support += np.array(list(self.confusion_matrices[k].values())).sum().item()
+        precision = sum_TP / (sum_TP + sum_FP)
+        recall = sum_TP / (sum_TP + sum_FN)
+        f1 = 2*(precision * recall / (precision + recall))
+        self.micro_avg = dict()
+        self.micro_avg['precision'] = precision
+        self.micro_avg['recall'] = recall
+        self.micro_avg['f1-score'] = f1
+        self.micro_avg['support'] = support
+    
+    def cal_macro_avg(self):
+        precision = []
+        recall = []
+        support = 0
+        for k, v in self.scores.items():
+            precision.append(v['p'])
+            recall.append(v['r'])
+        for k, v in self.confusion_matrices.items():
+            support += np.array(list(self.confusion_matrices[k].values())).sum().item()
+        precision = np.array(precision).mean()
+        recall = np.array(recall).mean()
+        f1 = 2*(precision * recall / (precision + recall))
+        self.macro_avg = dict()
+        self.macro_avg['precision'] = precision
+        self.macro_avg['recall'] = recall
+        self.macro_avg['f1-score'] = f1
+        self.macro_avg['support'] = support
+    
+    def cal_weight_avg(self):
+        tp = []
+        fp = []
+        fn = []
+        weight = []
+        support = 0
+        for k, v in self.confusion_matrices.items():
+            tp.append(v['TP'])
+            fp.append(v['FP'])
+            fn.append(v['FN'])
+            weight.append(np.array(list(v.values())).sum().item())
+            support += np.array(list(self.confusion_matrices[k].values())).sum().item()
+
+        weight = np.array(weight) / np.array(weight).sum()
+        tp = np.array(tp)
+        fp = np.array(fp)
+        fn = np.array(fn)
+        precision = (weight * tp).sum() / ((weight * tp).sum() + (weight * fp).sum())
+        recall = (weight * tp).sum() / ((weight * tp).sum() + (weight * fn).sum())
+        f1 = 2*(precision * recall / (precision + recall))
+        self.weight_avg = dict()
+        self.weight_avg['precision'] = precision.item()
+        self.weight_avg['recall'] = recall.item()
+        self.weight_avg['f1-score'] = f1.item()
+        self.weight_avg['support'] = support
+    
+    def generate_report(self):
+        self.cal_confusion_matrices()
+        self.cal_scores()
+        self.cal_micro_avg()
+        self.cal_macro_avg()
+        self.cal_weight_avg()
+        
+        report = dict()
+        for k, v in self.scores.items():
+            report[k] = dict()
+            report[k]['precision'] = v['p']
+            report[k]['recall'] = v['r']
+            report[k]['f1-score'] = v['f1']
+            report[k]['support'] = np.array(list(self.confusion_matrices[k].values())).sum().item()
+        report['micro avg'] = self.micro_avg
+        report['macro avg'] = self.macro_avg
+        report['weighted avg'] = self.weight_avg
+        return report

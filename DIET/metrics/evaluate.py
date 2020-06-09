@@ -74,36 +74,24 @@ def show_entity_report(dataset, pl_module, file_name=None, output_dir=None, cuda
 
 
         for i in range(entity_idx.shape[0]):
-            decode_original = decoder.process(input_ids[i].cpu().numpy(), entity_idx[i].numpy(), text[i])
-            decode_pred = decoder.process(input_ids[i].cpu().numpy(), entity_indices[i].numpy(), text[i])
+            decode_original = decoder.process(input_ids[i].cpu().numpy(), entity_idx[i].numpy())
+            decode_pred = decoder.process(input_ids[i].cpu().numpy(), entity_indices[i].numpy())
+            targets.append(decode_original)
+            preds.append(decode_pred)
 
-            #real value와 pred 비교
-            for origin in decode_original:
-                labels.add(origin['entity'])
-                find_idx = 0
-                for pred in decode_pred:
-                    if origin['start'] == pred['start'] and origin['end'] == pred['end']:
-                        preds.append(origin['entity'])
-                        targets.append(origin['entity'])
-                        find_idx += 1
-                if find_idx == 0:
-                     preds.append('No_Entity')
-                     targets.append(origin['entity'])
-            #pred와 real value 비교
-            for pred in decode_pred:
-                find_idx = 0
-                for origin in decode_original:
-                    if origin['start'] == pred['start'] and origin['end'] == pred['end']:
-                        find_idx += 1
-                if find_idx == 0:
-                    targets.append('No_Entity')
-                    preds.append(pred['entity'])
-
-    report = show_rasa_metrics(pred=preds, label=targets, file_name=file_name, output_dir=output_dir)
+            # for origin in decode_original:
+            #     labels.add(origin['entity'])
+            #     find_idx = 0
+            #     for pred in decode_pred:
+            #         if origin['start'] == pred['start'] and origin['end'] == pred['end']:
+            #             preds.append(origin['entity'])
+            #             targets.append(origin['entity'])
+            #             find_idx += 1
+            #     if find_idx == 0:
+            #          preds.append('No_Entity')
+            #          targets.append(origin['entity'])
 
 
-# def get_token_to_text(tokenizer, data):
-#     values = []
-#     for token in data:
-#         values.append(tokenizer.decode(token, skip_special_tokens=True))
-#     return values
+    report = show_entity_metrics(pred=preds, label=targets, file_name=file_name, output_dir=output_dir)
+
+

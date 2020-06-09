@@ -13,63 +13,128 @@ class NERDecoder(object):
         entities = []
         start_idx = -1
 
-        if isinstance(self.tokenizer, CharacterEncoder):  # in case of CharacterTokenizer
+       if isinstance(
+            self.model.dataset.tokenizer, CharacterEncoder):  # in case of CharacterTokenizer
             entity_indices = entity_indices.tolist()[: len(text)]
             start_idx = -1
             for i, char_idx in enumerate(entity_indices):
                 if char_idx != 0 and start_idx == -1:
                     start_idx = i
-                elif i > 0 and entity_indices[i - 1] != entity_indices[i]:
+                elif start_idx >= 0 and not self.is_same_entity(entity_indices[i-1], entity_indices[i]):
                     end_idx = i
-                    entities.append(
-                        {
-                            "start": max(start_idx, 0),
-                            "end": end_idx,
-                            "value": text[max(start_idx, 0) : end_idx],
-                            "entity": self.entity_dict[entity_indices[i - 1]],
-                        }
-                    )
-                    start_idx = -1
-                    
+
+                    if self.entity_dict[entity_indices[i-1]] != "O": # ignore 'O' tag
+                        entities.append(
+                            {
+                                "start": max(start_idx, 0),
+                                "end": end_idx,
+                                "value": text[max(start_idx, 0) : end_idx],
+                                "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
+                            }
+                        )
+
+                    if char_idx == 0:
+                        start_idx = -1
+                    else:
+                        start_idx = i
+
         else:
-            entity_indices = entity_indices.tolist()[: len(text)]
-            for i, entity_idx in enumerate(entity_indices):
-                if entity_idx != 0:
-                    token_idx = tokens[i+1] #except first BOS(CLS) token
-                    if isinstance(self.tokenizer, WhitespaceEncoder):  # in case of WhitespaceEncoder
-                        token_value = self.tokenizer.index_to_token[token_idx]
-                    elif "KoBertTokenizer" in str(type(self.tokenizer)):
-                        token_value = self.tokenizer.idx2token[token_idx]
-                    elif "ElectraTokenizer" in str(type(self.tokenizer)):
-                        token_value = self.tokenizer.convert_ids_to_tokens([token_idx])[0]
+            entity_indices = entity_indices.tolist()[:len(text)]
+            start_token_position = -1
 
-                    start_position = text.find(token_value)
+            # except first sequnce token whcih indicate BOS or [CLS] token
+            if type(tokens) == torch.Tensor:
+                tokens = tokens.long().tolist()
 
-                    if start_position > 0:
+            for i, entity_idx_value in enumerate(entity_indices):
+                if entity_idx_value != 0 and start_token_position == -1:
+                    start_token_position = i
+                elif start_token_position >= 0 and not self.is_same_entity(entity_indices[i-1],entity_indices[i]):
+                    end_token_position = i
+
+                    # find start text position
+                    token_idx = tokens[start_token_position + 1]
+                    if isinstance(
+                        self.model.dataset.tokenizer, WhitespaceEncoder
+                    ):  # WhitespaceEncoder
+                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
+                    elif "KoBertTokenizer" in str(
+                        type(self.model.dataset.tokenizer)
+                    ):  # KoBertTokenizer
+                        token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
+                    elif "ElectraTokenizer" in str(
+                        type(self.model.dataset.tokenizer)
+                    ):  # ElectraTokenizer
+                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens([token_idx])[0].replace("#", "")
+
+                    start_position = text.find(token_value.strip())
+
+                    # find end text position
+                    token_idx = tokens[end_token_position + 1]
+                    if isinstance(self.model.dataset.tokenizer, WhitespaceEncoder):  # WhitespaceEncoder
+                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
+                    elif "KoBertTokenizer" in str(type(self.model.dataset.tokenizer)):  # KoBertTokenizer
+                        token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
+                    elif "ElectraTokenizer" in str(
+                        type(self.model.dataset.tokenizer)
+                    ):  # ElectraTokenizer
+                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens(
+                            [token_idx]
+                        )[
+                            0
+                        ].replace(
+                            "#", ""
+                        )
+
+                    end_position = text.find(token_value.strip(), start_position) + len(token_value.strip())
+
+                    if self.entity_dict[entity_indices[i-1]] != "O": # ignore 'O' tag
                         entities.append(
                             {
                                 "start": start_position,
-                                "end": start_position + len(token_value),
-                                "value": token_value,
-                                "entity": self.entity_dict[entity_indices[i - 1]],
+                                "end": end_position,
+                                "value": text[start_position:end_position],
+                                "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
                             }
                         )
-        
-        return entities
-                
-# def decode_text(tokenizer, token):
-#     replace_index = []
-#     if isinstance(tokenizer, CharacterEncoder):
-#         replace_index.append('<s>')
-#         replace_index.append('</s>')
-#         replace_index.append('<pad>')
+                        
+                        start_token_position = -1
 
-#     if len(replace_index) > 0:
-#         decode = tokenizer.decode(token)
-#         for r in replace_index:
-#             decode = decode.replace(r, '')  
-#     else:
-#         decode = tokenizer.decode(token, skip_special_tokens=True)
+                    if entity_idx_value == 0:
+                        start_token_position = -1
 
-#     return decode
+        result = {
+            "text": text,
+            "intent": intent,
+            "intent_ranking": intent_ranking,
+            "entities": entities,
+        }
 
+        # print (result)
+
+        return result
+
+        # rasa NLU entire result format
+        """
+        {
+            "text": "Hello!",
+            "intent": {
+                "confidence": 0.6323,
+                "name": "greet"
+            },
+            "intent_ranking": [
+                {
+                    "confidence": 0.6323,
+                    "name": "greet"
+                }
+            ],
+            "entities": [
+                {
+                    "start": 0,
+                    "end": 0,
+                    "value": "string",
+                    "entity": "string"
+                }
+            ]
+        }
+        """

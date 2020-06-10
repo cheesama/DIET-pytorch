@@ -23,10 +23,10 @@ class PerfCallback(Callback):
         if self.file_path is None:
             print("evaluate valid data")
             dataset = pl_module.val_dataset
-            tokenizer = pl_module.hparams.tokenizer
+            tokenizer = pl_module.model.dataset.tokenizer
         else:
             print("evaluate new data")
-            tokenizer = pl_module.model.hparams.tokenizer
+            tokenizer = pl_module.model.dataset.tokenizer
             self.nlu_data = open(self.file_path, encoding="utf-8").readlines()
             dataset = RasaIntentEntityValidDataset(markdown_lines=self.nlu_data, tokenizer=tokenizer)
                 

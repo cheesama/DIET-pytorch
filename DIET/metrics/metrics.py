@@ -4,6 +4,7 @@
 from __future__ import unicode_literals, print_function, division
 
 import os
+import numpy as np
 import json
 import pandas as pd
 from sklearn import metrics
@@ -186,6 +187,22 @@ def show_rasa_metrics(pred, label, labels=None, target_names=None, output_dir='r
 
     return output
 
+
+def show_entity_metrics(pred, label,  output_dir='results', file_name=None):
+    entity_metric = Entity_Matrics(label, pred)
+
+    output = entity_metric.generate_report()
+                                           
+    if file_name is None:
+        file_name = 'reports.json'
+        
+    if output_dir is not None:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        with open(os.path.join(output_dir, file_name), 'w') as fp:
+            json.dump(output, fp, indent=4)
+
+    return output
 
 class Entity_Matrics:
     def __init__(self, sents_true_labels: Sequence[Sequence[Dict]], sents_pred_labels:Sequence[Sequence[Dict]]):

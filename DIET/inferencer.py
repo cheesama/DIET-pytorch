@@ -69,10 +69,10 @@ class Inferencer:
         _, entity_indices = torch.max((entity_result)[0][1:-1, :], dim=1)
         start_idx = -1
 
-        print ('tokens')
-        print (tokens)
-        print ('predicted entities')
-        print (entity_indices)
+        #print ('tokens')
+        #print (tokens)
+        #print ('predicted entities')
+        #print (entity_indices)
 
         if isinstance(
             self.model.dataset.tokenizer, CharacterEncoder
@@ -90,7 +90,7 @@ class Inferencer:
                             {
                                 "start": max(start_idx, 0),
                                 "end": end_idx,
-                                "value": text[max(start_idx, 0) : end_idx],
+                                "value": text[max(start_idx, 0) : end_idx + 1],
                                 "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
                             }
                         )
@@ -125,15 +125,17 @@ class Inferencer:
                         self.model.dataset.tokenizer, WhitespaceEncoder
                     ):  # WhitespaceEncoder
                         token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
-                    elif "KoBertTokenizer" in str(
-                        type(self.model.dataset.tokenizer)
-                    ):  # KoBertTokenizer
+                    elif "KoBertTokenizer" in str(type(self.model.dataset.tokenizer)):  # KoBertTokenizer
                         token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
                     elif "ElectraTokenizer" in str(
                         type(self.model.dataset.tokenizer)
                     ):  # ElectraTokenizer
                         token_value = self.model.dataset.tokenizer.convert_ids_to_tokens([token_idx])[0].replace("#", "")
 
+                    if len(token_value.strip()) == 0:
+                        start_token_position = -1
+                        continue
+                    
                     start_position = text.find(token_value.strip())
 
                     # find end text position

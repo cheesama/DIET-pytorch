@@ -16,10 +16,9 @@ class NERDecoder(object):
         # mapping entity result
         entities = []
         start_idx = -1
-        start_idx = -1
 
         if isinstance(
-            self.tokenizer, CharacterEncoder
+            self.model.dataset.tokenizer, CharacterEncoder
         ):  # in case of CharacterTokenizer
             entity_indices = entity_indices.tolist()[: len(text)]
             start_idx = -1
@@ -34,7 +33,7 @@ class NERDecoder(object):
                             {
                                 "start": max(start_idx, 0),
                                 "end": end_idx,
-                                "value": text[max(start_idx, 0) : end_idx],
+                                "value": text[max(start_idx, 0) : end_idx + 1],
                                 "entity": self.entity_dict[entity_indices[i-1]][:self.entity_dict[entity_indices[i-1]].rfind('_')]
                             }
                         )
@@ -66,30 +65,32 @@ class NERDecoder(object):
                     # find start text position
                     token_idx = tokens[start_token_position + 1]
                     if isinstance(
-                        self.tokenizer, WhitespaceEncoder
+                        self.model.dataset.tokenizer, WhitespaceEncoder
                     ):  # WhitespaceEncoder
-                        token_value = self.tokenizer.index_to_token[token_idx]
-                    elif "KoBertTokenizer" in str(
-                        type(self.tokenizer)
-                    ):  # KoBertTokenizer
-                        token_value = self.tokenizer.idx2token[token_idx].replace("▁", " ")
+                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
+                    elif "KoBertTokenizer" in str(type(self.model.dataset.tokenizer)):  # KoBertTokenizer
+                        token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
                     elif "ElectraTokenizer" in str(
-                        type(self.tokenizer)
+                        type(self.model.dataset.tokenizer)
                     ):  # ElectraTokenizer
-                        token_value = self.tokenizer.convert_ids_to_tokens([token_idx])[0].replace("#", "")
+                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens([token_idx])[0].replace("#", "")
 
+                    if len(token_value.strip()) == 0:
+                        start_token_position = -1
+                        continue
+                    
                     start_position = text.find(token_value.strip())
 
                     # find end text position
                     token_idx = tokens[end_token_position + 1]
-                    if isinstance(self.tokenizer, WhitespaceEncoder):  # WhitespaceEncoder
-                        token_value = self.tokenizer.index_to_token[token_idx]
-                    elif "KoBertTokenizer" in str(type(self.tokenizer)):  # KoBertTokenizer
-                        token_value = self.tokenizer.idx2token[token_idx].replace("▁", " ")
+                    if isinstance(self.model.dataset.tokenizer, WhitespaceEncoder):  # WhitespaceEncoder
+                        token_value = self.model.dataset.tokenizer.index_to_token[token_idx]
+                    elif "KoBertTokenizer" in str(type(self.model.dataset.tokenizer)):  # KoBertTokenizer
+                        token_value = self.model.dataset.tokenizer.idx2token[token_idx].replace("▁", " ")
                     elif "ElectraTokenizer" in str(
-                        type(self.tokenizer)
+                        type(self.model.dataset.tokenizer)
                     ):  # ElectraTokenizer
-                        token_value = self.tokenizer.convert_ids_to_tokens(
+                        token_value = self.model.dataset.tokenizer.convert_ids_to_tokens(
                             [token_idx]
                         )[
                             0

@@ -23,7 +23,7 @@ class PerfCallback(Callback):
         if self.file_path is None:
             print("evaluate valid data")
             dataset = pl_module.val_dataset
-            tokenizer = pl_module.model.dataset.tokenizer
+            tokenizer = pl_module.dataset.tokenizer
         else:
             print("evaluate new data")
             tokenizer = pl_module.model.dataset.tokenizer

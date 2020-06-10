@@ -38,4 +38,4 @@ class PerfCallback(Callback):
         intent_report_nm = self.report_nm.replace('.', '_intent.')
         entity_report_nm = self.report_nm.replace('.', '_entity.')
         show_intent_report(dataset, pl_module, tokenizer, file_name=intent_report_nm, output_dir=self.output_dir, cuda=self.cuda)
-        show_entity_report(dataset, pl_module, file_name=entity_report_nm, output_dir=self.output_dir, cuda=self.cuda)
+        show_entity_report(dataset, pl_module, tokenizer, file_name=entity_report_nm, output_dir=self.output_dir, cuda=self.cuda)

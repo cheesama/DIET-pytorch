@@ -2,7 +2,7 @@ import os
 import glob
 from pytorch_lightning.callbacks.base import Callback
 from DIET.metrics import show_intent_report, show_entity_report
-from DIET.dataset.intent_entity_dataset import RasaIntentEntityDataset
+from DIET.dataset.intent_entity_dataset import RasaIntentEntityValidDataset
 
 class PerfCallback(Callback):
     def __init__(self, file_path=None, gpu_num=0, report_nm=None, output_dir=None, root_path=None):
@@ -28,7 +28,7 @@ class PerfCallback(Callback):
             print("evaluate new data")
             tokenizer = pl_module.model.hparams.tokenizer
             self.nlu_data = open(self.file_path, encoding="utf-8").readlines()
-            dataset = RasaIntentEntityDataset(markdown_lines=self.nlu_data, tokenizer=tokenizer)
+            dataset = RasaIntentEntityValidDataset(markdown_lines=self.nlu_data, tokenizer=tokenizer)
                 
         if self.output_dir is None:
             folder_path = [f for f in glob.glob(os.path.join(self.root_path, "**/"), recursive=False)]

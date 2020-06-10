@@ -402,6 +402,38 @@ class RasaIntentEntityValidDataset(torch.utils.data.Dataset):
 
                     if len(text) > 0:
                         text_list.append(text.strip())
+        
+        #dataset tokenizer setting
+        if "ElectraTokenizer" in str(type(tokenizer)):
+            self.tokenizer = tokenizer
+            self.pad_token_id = 0
+            self.unk_token_id = 1
+            self.eos_token_id = 3 #[SEP] token
+            self.bos_token_id = 2 #[CLS] token
+
+        else:
+            if isinstance(self.tokenizer, CharacterEncoder):
+                # torchnlp base special token indices
+                self.pad_token_id = 0
+                self.unk_token_id = 1
+                self.eos_token_id = 2
+                self.bos_token_id = 3
+            elif isinstance(self.tokenizer, WhitespaceEncoder):
+                # torchnlp base special token indices
+                self.pad_token_id = 0
+                self.unk_token_id = 1
+                self.eos_token_id = 2
+                self.bos_token_id = 3
+
+            elif "KoBertTokenizer" in str(type(self.tokenizer)):
+                self.pad_token_id = 1
+                self.unk_token_id = 0
+                self.eos_token_id = 3 #[SEP] token
+                self.bos_token_id = 2 #[CLS] token
+            else:
+                raise ValueError('not supported tokenizer type')
+
+
 
         intent_value_list = sorted(intent_value_list)
         for intent_value in intent_value_list:

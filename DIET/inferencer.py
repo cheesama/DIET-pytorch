@@ -69,10 +69,10 @@ class Inferencer:
         _, entity_indices = torch.max((entity_result)[0][1:-1, :], dim=1)
         start_idx = -1
 
-        #print ('tokens')
-        #print (tokens)
-        #print ('predicted entities')
-        #print (entity_indices)
+        print ('tokens')
+        print (tokens)
+        print ('predicted entities')
+        print (entity_indices)
 
         if isinstance(
             self.model.dataset.tokenizer, CharacterEncoder
@@ -83,7 +83,7 @@ class Inferencer:
                 if char_idx != 0 and start_idx == -1:
                     start_idx = i
                 elif start_idx >= 0 and not self.is_same_entity(entity_indices[i-1], entity_indices[i]):
-                    end_idx = i
+                    end_idx = i - 1
 
                     if self.entity_dict[entity_indices[i-1]] != "O": # ignore 'O' tag
                         entities.append(
@@ -112,7 +112,12 @@ class Inferencer:
                 if entity_idx_value != 0 and start_token_position == -1:
                     start_token_position = i
                 elif start_token_position >= 0 and not self.is_same_entity(entity_indices[i-1],entity_indices[i]):
-                    end_token_position = i
+                    end_token_position = i - 1
+
+                    #print ('start_token_position')
+                    #print (start_token_position)
+                    #print ('end_token_position')
+                    #print (end_token_position)
 
                     # find start text position
                     token_idx = tokens[start_token_position + 1]

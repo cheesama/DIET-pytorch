@@ -1,8 +1,8 @@
 import os
 import glob
 from pytorch_lightning.callbacks.base import Callback
-from DIET.metrics import show_intent_report
-from DIET.dataset.intent_entity_dataset import RasaIntentEntityDataset
+from DIET.metrics import show_intent_report, show_entity_report
+from DIET.dataset.intent_entity_dataset import RasaIntentEntityValidDataset
 
 class PerfCallback(Callback):
     def __init__(self, file_path=None, gpu_num=0, report_nm=None, output_dir=None, root_path=None):
@@ -23,12 +23,12 @@ class PerfCallback(Callback):
         if self.file_path is None:
             print("evaluate valid data")
             dataset = pl_module.val_dataset
-            tokenizer = pl_module.hparams.tokenizer
+            tokenizer = pl_module.dataset.tokenizer
         else:
             print("evaluate new data")
-            tokenizer = pl_module.model.hparams.tokenizer
+            tokenizer = pl_module.model.dataset.tokenizer
             self.nlu_data = open(self.file_path, encoding="utf-8").readlines()
-            dataset = RasaIntentEntityDataset(markdown_lines=self.nlu_data, tokenizer=tokenizer)
+            dataset = RasaIntentEntityValidDataset(markdown_lines=self.nlu_data, tokenizer=tokenizer)
                 
         if self.output_dir is None:
             folder_path = [f for f in glob.glob(os.path.join(self.root_path, "**/"), recursive=False)]
@@ -36,4 +36,6 @@ class PerfCallback(Callback):
             self.output_dir  = folder_path[-1]
         self.output_dir = os.path.join(self.output_dir, 'results')
         intent_report_nm = self.report_nm.replace('.', '_intent.')
+        entity_report_nm = self.report_nm.replace('.', '_entity.')
         show_intent_report(dataset, pl_module, tokenizer, file_name=intent_report_nm, output_dir=self.output_dir, cuda=self.cuda)
+        show_entity_report(dataset, pl_module, tokenizer, file_name=entity_report_nm, output_dir=self.output_dir, cuda=self.cuda)

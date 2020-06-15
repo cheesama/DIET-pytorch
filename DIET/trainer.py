@@ -66,7 +66,7 @@ def train(
             model_args["tokenizer"] = "kobert"
         elif backbone == "koelectra":
             model_args["tokenizer"] = ElectraTokenizer.from_pretrained(
-                "monologg/koelectra-small-discriminator"
+                "monologg/koelectra-small-v2-discriminator"
             )
 
     # model args

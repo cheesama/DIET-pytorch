@@ -45,7 +45,7 @@ class EmbeddingTransformer(nn.Module):
                 self.encoder = get_distilkobert_model()
             elif backbone == "koelectra":
                 self.encoder = ElectraModel.from_pretrained(
-                    "monologg/koelectra-small-discriminator"
+                    "monologg/koelectra-small-v2-discriminator"
                 )
 
             d_model = self.encoder.config.hidden_size

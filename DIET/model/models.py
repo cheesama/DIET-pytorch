@@ -50,8 +50,8 @@ class EmbeddingTransformer(nn.Module):
 
             d_model = self.encoder.config.hidden_size
 
-        self.embedding = nn.EmbeddingBag(vocab_size, d_model, sparse=True)
-        self.position_embedding = nn.EmbeddingBag(self.seq_len, d_model, sparse=True)
+        self.embedding = nn.Embedding(vocab_size, d_model)
+        self.position_embedding = nn.Embedding(self.seq_len, d_model)
 
         self.intent_feature = nn.Linear(d_model, intent_class_num)
         self.entity_feature = nn.Linear(d_model, entity_class_num)

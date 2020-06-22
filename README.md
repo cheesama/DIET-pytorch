@@ -96,7 +96,34 @@ There are several changes int here.
 3. There is no mask loss.
 
     Relating upper difference, it doesn't use any pre-trained embedding and tokenizer. So masking techinique is hard to apply.
-
+    
+## Model Architecture
+```mermaid
+ graph TD
+	A[User Utterance] --> B(pre-trained or white-space or character Tokenizer)
+	B --> C(CLS)
+        B --> D(Token1)
+        B --> E(...)
+        B --> F(SEP)
+        B --> G(PAD...)
+        C --> H(Pretrained Model or Naive Transformer)
+        D --> H
+        E --> H
+        F --> H
+        G --> H
+        H --> I(feature 0)
+        H --> J(feature 1)
+        H --> K(feature ...)
+        H --> L(feature ...)
+        H --> M(feature N-1)
+        I --> N(Intent Embedding Layer)
+        N --> O(Predicted Intent Label)
+        J --> P(Entity Embedding Layer)
+        K --> P
+        L --> P
+        M --> P
+        P --> Q(Predicted Entity Labels)
+```
 
 ## Reference
 

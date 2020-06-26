@@ -41,6 +41,8 @@ class Inferencer:
                 "model is not loaded, first call load_model(checkpoint_path)"
             )
 
+        text = text.strip().lower()
+
         # encode text to token_indices
         tokens = self.model.dataset.encode(text)
         intent_result, entity_result = self.model.forward(tokens.unsqueeze(0))

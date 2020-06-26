@@ -62,7 +62,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
 
             else:
                 if current_intent_focus != "":
-                    text = line[2:].strip()
+                    text = line[2:].strip().lower()
 
                     for type_str in re.finditer(r"\([a-zA-Z_1-2]+\)", text):
                         entity_type = (
@@ -143,7 +143,7 @@ class RasaIntentEntityDataset(torch.utils.data.Dataset):
                     current_intent_focus = ""
             else:
                 if current_intent_focus != "":  # intent & entity sentence occur case
-                    text = line[2:]
+                    text = line[2:].strip().lower()
 
                     entity_value_list = []
                     for value in re.finditer(r"\[(.*?)\]", text):

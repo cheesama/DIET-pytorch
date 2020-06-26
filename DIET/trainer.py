@@ -16,11 +16,12 @@ import torch
 from torch.utils.data import DataLoader
 from DIET.eval import PerfCallback
 
+
 def train(
     file_path,
     # training args
     train_ratio=0.8,
-    batch_size=128,
+    batch_size=None,
     optimizer="Adam",
     intent_optimizer_lr=1e-5,
     entity_optimizer_lr=2e-5,
@@ -36,16 +37,35 @@ def train(
     **kwargs
 ):
     gpu_num = torch.cuda.device_count()
-    
 
     if backbone is None:
         report_nm = "diet_{}_tokenizer_report.json".format(tokenizer_type)
     else:
         report_nm = "{}_report.json".format(backbone)
-    
-    trainer = Trainer(
-        default_root_dir=checkpoint_path, max_epochs=max_epochs, gpus=gpu_num, callbacks=[PerfCallback(gpu_num=gpu_num, report_nm=report_nm, root_path=checkpoint_path)]
-    )
+
+    if batch_size is not None:
+        trainer = Trainer(
+            default_root_dir=checkpoint_path,
+            max_epochs=max_epochs,
+            gpus=gpu_num,
+            callbacks=[
+                PerfCallback(
+                    gpu_num=gpu_num, report_nm=report_nm, root_path=checkpoint_path
+                )
+            ],
+        )
+    else:
+        trainer = Trainer(
+            default_root_dir=checkpoint_path,
+            max_epochs=max_epochs,
+            gpus=gpu_num,
+            auto_scale_batch_size='binsearch',
+            callbacks=[
+                PerfCallback(
+                    gpu_num=gpu_num, report_nm=report_nm, root_path=checkpoint_path
+                )
+            ],
+        )
 
     model_args = {}
 

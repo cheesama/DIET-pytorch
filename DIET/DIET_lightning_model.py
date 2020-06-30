@@ -6,9 +6,9 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 
 from torchnlp.metrics import get_accuracy, get_token_accuracy
-from sklearn.metrics import balanced_accuracy_score
 
 from pytorch_lightning import Trainer
+from pytorch_lightning.metrics.functional import f1_score
 
 from .dataset.intent_entity_dataset import RasaIntentEntityDataset
 from .model.models import EmbeddingTransformer
@@ -119,8 +119,8 @@ class DualIntentEntityTransformer(pl.LightningModule):
         tokens, intent_idx, entity_idx, text = batch
         intent_pred, entity_pred = self.forward(tokens)
 
-        intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
-        entity_acc = balanced_accuracy_score(entity_idx.cpu().tolist()[0], entity_pred.max(2)[1].cpu().tolist()[0])
+        intent_acc = get_accuracy(intent_pred.argmax(1), intent_idx)[0]
+        entity_acc = get_token_accuracy(entity_pred.argmax(2), entity_idx, ignore_index=self.dataset.pad_token_id)[0]
 
         tensorboard_logs = {
             "train/intent/acc": intent_acc,
@@ -151,8 +151,9 @@ class DualIntentEntityTransformer(pl.LightningModule):
         tokens, intent_idx, entity_idx, text = batch
         intent_pred, entity_pred = self.forward(tokens)
 
-        intent_acc = get_accuracy(intent_idx.cpu(), intent_pred.max(1)[1].cpu())[0]
-        entity_acc = balanced_accuracy_score(entity_idx.cpu().tolist()[0], entity_pred.max(2)[1].cpu().tolist()[0])
+        intent_acc = get_accuracy(intent_pred.argmax(1), intent_idx)[0]
+        entity_acc = get_token_accuracy(entity_pred.argmax(2), entity_idx, ignore_index=self.dataset.pad_token_id)[0]
+        intent_f1 = f1_score(intent_pred.argmax(1), intent_idx)
 
         intent_loss = self.intent_loss_fn(intent_pred, intent_idx.squeeze(1))
         entity_loss = self.entity_loss_fn(entity_pred.transpose(1, 2), entity_idx.long(),)
@@ -160,24 +161,29 @@ class DualIntentEntityTransformer(pl.LightningModule):
         return {
             "val_intent_acc": torch.Tensor([intent_acc]),
             "val_entity_acc": torch.Tensor([entity_acc]),
+            "val_intent_f1": intent_f1,
             "val_intent_loss": intent_loss,
             "val_entity_loss": entity_loss,
             "val_loss": intent_loss + entity_loss,
         }
 
-    def validation_end(self, outputs):
+    def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
         avg_intent_acc = torch.stack([x["val_intent_acc"] for x in outputs]).mean()
         avg_entity_acc = torch.stack([x["val_entity_acc"] for x in outputs]).mean()
+        avg_intent_f1 = torch.stack([x["val_intent_f1"] for x in outputs]).mean()
 
         tensorboard_logs = {
             "val/loss": avg_loss,
             "val/intent_acc": avg_intent_acc,
             "val/entity_acc": avg_entity_acc,
+            "val/intent_f1": avg_intent_f1,
         }
 
         return {
             "val_loss": avg_loss,
+            "val_intent_f1": avg_intent_f1,
+            "val_entity_acc": avg_entity_acc,
             "log": tensorboard_logs,
             "progress_bar": tensorboard_logs,
         }

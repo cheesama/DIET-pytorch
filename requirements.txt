@@ -11,7 +11,7 @@ pytest
 pytest-remotedata
 
 #models
-transformers==2.9.1
+transformers==4.30.0
 kobert-transformers
 pytorch-nlp
 sentencepiece
